@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: sans-serif;
+  }
+
+  #pet-container {
+    width: 160px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pet-body {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Simple SVG cat face */
+  svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  }
+
+  .bubble {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 8px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    color: #333;
+  }
+  .bubble.show { opacity: 1; }
+  .bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(255,255,255,0.95);
+  }
+
+  /* Emotions */
+  .eyes-normal { display: block; }
+  .eyes-happy { display: none; }
+  .eyes-angry { display: none; }
+  .eyes-sleep { display: none; }
+
+  .state-angry .eyes-normal { display: none; }
+  .state-angry .eyes-angry { display: block; }
+  .state-happy .eyes-normal { display: none; }
+  .state-happy .eyes-happy { display: block; }
+  .state-sleep .eyes-normal { display: none; }
+  .state-sleep .eyes-sleep { display: block; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .shake { animation: shake 0.3s ease-in-out 2; }
+
+  .blush { opacity: 0; transition: opacity 0.3s; }
+  .state-happy .blush { opacity: 0.6; }
+</style>
+</head>
+<body>
+<div id="pet-container">
+  <div class="bubble" id="bubble">戳我干嘛~</div>
+  <div class="pet-body" id="petBody">
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Ears -->
+      <polygon points="30,30 20,5 45,25" fill="#F5A0B5" />
+      <polygon points="90,30 100,5 75,25" fill="#F5A0B5" />
+      <polygon points="32,28 24,12 43,25" fill="#FFC4D0" />
+      <polygon points="88,28 96,12 77,25" fill="#FFC4D0" />
+
+      <!-- Face -->
+      <ellipse cx="60" cy="65" rx="45" ry="40" fill="#FCE4EC" />
+
+      <!-- Eyes (normal) -->
+      <g class="eyes-normal">
+        <ellipse cx="42" cy="58" rx="7" ry="8" fill="#333" />
+        <ellipse cx="78" cy="58" rx="7" ry="8" fill="#333" />
+        <ellipse cx="44" cy="55" rx="3" ry="3" fill="white" />
+        <ellipse cx="80" cy="55" rx="3" ry="3" fill="white" />
+      </g>
+
+      <!-- Eyes (happy - ^^) -->
+      <g class="eyes-happy">
+        <path d="M35,58 Q42,48 49,58" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M71,58 Q78,48 85,58" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- Eyes (angry ><) -->
+      <g class="eyes-angry">
+        <line x1="35" y1="50" x2="49" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+        <line x1="49" y1="50" x2="35" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+        <line x1="71" y1="50" x2="85" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+        <line x1="85" y1="50" x2="71" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+      </g>
+
+      <!-- Eyes (sleep - xx) -->
+      <g class="eyes-sleep">
+        <line x1="35" y1="60" x2="49" y2="58" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="71" y1="60" x2="85" y2="58" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- Blush -->
+      <ellipse class="blush" cx="32" cy="72" rx="8" ry="5" fill="#FF9999" opacity="0" />
+      <ellipse class="blush" cx="88" cy="72" rx="8" ry="5" fill="#FF9999" opacity="0" />
+
+      <!-- Mouth -->
+      <path d="M52,78 Q60,86 68,78" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" id="mouth"/>
+
+      <!-- Nose -->
+      <ellipse cx="60" cy="70" rx="3" ry="2" fill="#FFA0B0" />
+
+      <!-- Whiskers -->
+      <line x1="15" y1="65" x2="35" y2="68" stroke="#DDD" stroke-width="1.5" />
+      <line x1="15" y1="72" x2="35" y2="72" stroke="#DDD" stroke-width="1.5" />
+      <line x1="85" y1="68" x2="105" y2="65" stroke="#DDD" stroke-width="1.5" />
+      <line x1="85" y1="72" x2="105" y2="72" stroke="#DDD" stroke-width="1.5" />
+
+      <!-- Paws -->
+      <ellipse cx="40" cy="105" rx="15" ry="10" fill="#FCE4EC" />
+      <ellipse cx="80" cy="105" rx="15" ry="10" fill="#FCE4EC" />
+      <ellipse cx="40" cy="103" rx="4" ry="3" fill="#FFC4D0" />
+      <ellipse cx="80" cy="103" rx="4" ry="3" fill="#FFC4D0" />
+    </svg>
+  </div>
+</div>
+
+<script>
+  const petEngine = window.petEngine = {
+    state: 'normal',
+    bubbleEl: document.getElementById('bubble'),
+    bodyEl: document.getElementById('petBody'),
+
+    showBubble(text, duration) {
+      this.bubbleEl.textContent = text;
+      this.bubbleEl.classList.add('show');
+      clearTimeout(this.bubbleTimer);
+      this.bubbleTimer = setTimeout(() => {
+        this.bubbleEl.classList.remove('show');
+      }, duration || 2000);
+    },
+
+    setState(state) {
+      this.bodyEl.className = 'pet-body' + (state ? ' state-' + state : '');
+      this.state = state || 'normal';
+    },
+
+    onTap() {
+      this.showBubble('\u1d49\u1d4a\u1d50\u1d49~', 1500);
+      this.setState('happy');
+      this.bodyEl.classList.add('shake');
+      setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
+      setTimeout(() => this.setState('normal'), 2000);
+    },
+
+    onDoubleTap() {
+      this.showBubble('\u2764\ufe0f \u1d48\u1d43\u1d49\u1d49~', 2000);
+      this.setState('happy');
+      this.bodyEl.classList.add('shake');
+      setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
+      setTimeout(() => this.setState('normal'), 2500);
+    },
+
+    onLongPress() {
+      this.showBubble('\u1d43\u02b0\u1d49\u1d48\uff01\u2102\u1d49\u1d43\u1d49!', 2000);
+      this.setState('angry');
+      this.bodyEl.classList.add('shake');
+      setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
+      setTimeout(() => this.setState('normal'), 2500);
+    },
+
+    sleep() {
+      this.setState('sleep');
+      this.showBubble('zZZ...', 3000);
+    },
+
+    wake() {
+      this.setState('happy');
+      this.showBubble('\u1d48\u1d58\u1d4a~', 1500);
+      setTimeout(() => this.setState('normal'), 2000);
+    }
+  };
+
+  // Say hi after load
+  setTimeout(() => petEngine.showBubble('\u1d48\u1d49~', 2000), 1000);
+  // Sleep after 30s idle
+  setTimeout(() => petEngine.sleep(), 30000);
+</script>
+</body>
+</html>
