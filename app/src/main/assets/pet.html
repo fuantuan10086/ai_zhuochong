@@ -190,6 +190,7 @@
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2000);
+      broadcastPetEvent('tap');
     },
 
     onDoubleTap() {
@@ -198,6 +199,7 @@
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2500);
+      broadcastPetEvent('doubleTap');
     },
 
     onLongPress() {
@@ -206,6 +208,7 @@
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2500);
+      broadcastPetEvent('longPress');
     },
 
     sleep() {
@@ -224,6 +227,94 @@
   setTimeout(() => petEngine.showBubble('\u1d48\u1d49~', 2000), 1000);
   // Sleep after 30s idle
   setTimeout(() => petEngine.sleep(), 30000);
+
+  // ===== SUPABASE REALTIME (AI SOUL LINK) =====
+  const SUPABASE_URL = 'https://lvrsjwmyvltggbicrsnp.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_vbkWY42q7GDgQa0gcIHriA_J-U4lZpg';
+  const CHANNEL = 'realtime:pet_channel';
+  let rtWs = null;
+  let rtConnected = false;
+  let reconnectTimer = null;
+
+  function connectRealtime() {
+    try {
+      const wsUrl = SUPABASE_URL.replace('https://', 'wss://') +
+        '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
+      rtWs = new WebSocket(wsUrl);
+    } catch (e) { scheduleReconnect(); return; }
+
+    rtWs.onopen = function () {
+      rtWs.send(JSON.stringify({
+        topic: CHANNEL,
+        event: 'phx_join',
+        payload: { config: { broadcast: { self: true } } },
+        ref: 'join1'
+      }));
+    };
+
+    rtWs.onmessage = function (e) {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'phx_reply' && msg.payload && msg.payload.status === 'ok') {
+          if (!rtConnected) {
+            rtConnected = true;
+            console.log('[soul] connected');
+          }
+          return;
+        }
+        if (msg.event === 'broadcast' && msg.payload &&
+            msg.payload.event === 'ai_command' && msg.payload.payload) {
+          handleAICommand(msg.payload.payload);
+        }
+      } catch (err) {}
+    };
+
+    rtWs.onclose = function () {
+      rtConnected = false;
+      scheduleReconnect();
+    };
+    rtWs.onerror = function () {
+      try { rtWs.close(); } catch (e) {}
+    };
+  }
+
+  function scheduleReconnect() {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectRealtime, 5000);
+  }
+
+  function handleAICommand(cmd) {
+    if (!cmd) return;
+    if (cmd.mood) petEngine.setState(cmd.mood);
+    if (cmd.text) petEngine.showBubble(cmd.text, cmd.duration || 3000);
+    if (cmd.action === 'shake') {
+      petEngine.bodyEl.classList.remove('shake');
+      void petEngine.bodyEl.offsetWidth;
+      petEngine.bodyEl.classList.add('shake');
+    }
+    if (cmd.action === 'sleep') petEngine.sleep();
+    if (cmd.action === 'wake') petEngine.wake();
+    if (cmd.mood && cmd.mood !== 'sleep') {
+      clearTimeout(petEngine.moodResetTimer);
+      petEngine.moodResetTimer = setTimeout(function () {
+        petEngine.setState('normal');
+      }, (cmd.duration || 3000) + 1000);
+    }
+  }
+
+  function broadcastPetEvent(type, extra) {
+    if (!rtWs || rtWs.readyState !== 1) return;
+    const payload = { type: type, ts: Date.now() };
+    if (extra) for (var k in extra) payload[k] = extra[k];
+    rtWs.send(JSON.stringify({
+      topic: CHANNEL,
+      event: 'broadcast',
+      payload: { type: 'broadcast', event: 'pet_event', payload: payload },
+      ref: 'evt' + Date.now()
+    }));
+  }
+
+  connectRealtime();
 </script>
 </body>
 </html>
