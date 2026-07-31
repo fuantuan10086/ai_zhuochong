@@ -146,6 +146,9 @@ class OverlayService : Service() {
     private var menuOpen = false
     private var chatOpen = false
 
+    private var savedX = 50
+    private var savedY = 300
+
     // JS桥接：桌宠5连戳后移动到右下角画圈
     inner class AndroidBridge {
         private val uiHandler = Handler(Looper.getMainLooper())
@@ -153,6 +156,8 @@ class OverlayService : Service() {
         @android.webkit.JavascriptInterface
         fun moveToCorner() {
             uiHandler.post {
+                savedX = params?.x ?: 50
+                savedY = params?.y ?: 300
                 val dm = resources.displayMetrics
                 val sw = dm.widthPixels
                 val sh = dm.heightPixels
@@ -160,6 +165,16 @@ class OverlayService : Service() {
                 val h = params?.height ?: 0
                 params?.x = sw - w - 12
                 params?.y = sh - h - 160
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
+        }
+
+        // 角落模式结束：回到原来的位置
+        @android.webkit.JavascriptInterface
+        fun moveBack() {
+            uiHandler.post {
+                params?.x = savedX
+                params?.y = savedY
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
