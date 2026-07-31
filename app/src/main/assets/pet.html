@@ -45,18 +45,19 @@
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255,255,255,0.95);
-    border-radius: 16px;
-    padding: 6px 12px;
+    border-radius: 14px;
+    padding: 5px 10px;
     font-size: 13px;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.35;
+    text-align: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
     color: #333;
-    max-width: 110px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 140px;
   }
   .bubble.show { opacity: 1; }
   .bubble::after {
@@ -75,6 +76,7 @@
   .eyes-happy { display: none; }
   .eyes-angry { display: none; }
   .eyes-sleep { display: none; }
+  .eyes-sad { display: none; }
 
   .state-angry .eyes-normal { display: none; }
   .state-angry .eyes-angry { display: block; }
@@ -82,6 +84,40 @@
   .state-happy .eyes-happy { display: block; }
   .state-sleep .eyes-normal { display: none; }
   .state-sleep .eyes-sleep { display: block; }
+  .state-sad .eyes-normal { display: none; }
+  .state-sad .eyes-sad { display: block; }
+
+  /* Sad = 翻肚皮的发霉鱼干 */
+  .state-sad .whale-body {
+    transform: rotate(180deg);
+    filter: grayscale(0.85) brightness(0.75);
+  }
+  .state-sad .pet-body { animation: sadBob 2s ease-in-out infinite; }
+
+  @keyframes sadBob {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(2px) scale(0.98); }
+  }
+
+  /* Happy = 跳一下 */
+  .state-happy .whale-body { animation: whaleJump 0.5s ease-in-out; }
+  @keyframes whaleJump {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-14px) rotate(-8deg); }
+  }
+
+  /* Angry = 变红+抖动 */
+  .state-angry .whale-body {
+    animation: whaleAngry 0.25s ease-in-out infinite alternate;
+    filter: hue-rotate(-20deg) saturate(1.6);
+  }
+  @keyframes whaleAngry {
+    from { transform: translateX(-3px) rotate(-2deg); }
+    to { transform: translateX(3px) rotate(2deg); }
+  }
+
+  /* Sleep = 变灰蓝 */
+  .state-sleep .whale-body { filter: saturate(0.55) brightness(0.92); }
 
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
@@ -102,67 +138,78 @@
 </head>
 <body>
 <div id="pet-container">
-  <div class="bubble" id="bubble">戳我干嘛~</div>
+  <div class="bubble" id="bubble">你好呀~</div>
   <div class="pet-body" id="petBody">
-    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <!-- Ears -->
-      <polygon points="30,30 20,5 45,25" fill="#F5A0B5" />
-      <polygon points="90,30 100,5 75,25" fill="#F5A0B5" />
-      <polygon points="32,28 24,12 43,25" fill="#FFC4D0" />
-      <polygon points="88,28 96,12 77,25" fill="#FFC4D0" />
+    <svg class="whale-body" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- 尾巴 -->
+      <path d="M6,52 C6,40 18,34 26,42 C20,44 16,48 16,52 C16,56 20,60 26,62 C18,70 6,64 6,52 Z" fill="#3D5AFE"/>
+      <!-- 尾鳍小点缀 -->
+      <path d="M14,52 C14,47 18,44 21,46 C18,48 16,50 16,52 C16,54 18,56 21,58 C18,60 14,57 14,52 Z" fill="#2839C4"/>
 
-      <!-- Face -->
-      <ellipse cx="60" cy="65" rx="45" ry="40" fill="#FCE4EC" />
+      <!-- 身体 -->
+      <ellipse cx="66" cy="52" rx="44" ry="30" fill="#4D6BFE"/>
+      <!-- 身体高光 -->
+      <ellipse cx="58" cy="38" rx="26" ry="10" fill="#6E86FF" opacity="0.5"/>
 
-      <!-- Eyes (normal) -->
+      <!-- 肚皮 -->
+      <path d="M30,58 Q66,84 104,58 Q66,66 30,58 Z" fill="#DCE4FF"/>
+
+      <!-- 背鳍 -->
+      <path d="M58,24 Q66,10 74,24 Q66,28 58,24 Z" fill="#3D5AFE"/>
+
+      <!-- 胸鳍 -->
+      <path d="M48,66 Q58,82 68,78 Q62,70 60,64 Z" fill="#3D5AFE"/>
+
+      <!-- 眼睛 (normal 圆眼) -->
       <g class="eyes-normal">
-        <ellipse cx="42" cy="58" rx="7" ry="8" fill="#333" />
-        <ellipse cx="78" cy="58" rx="7" ry="8" fill="#333" />
-        <ellipse cx="44" cy="55" rx="3" ry="3" fill="white" />
-        <ellipse cx="80" cy="55" rx="3" ry="3" fill="white" />
+        <circle cx="88" cy="42" r="9" fill="white"/>
+        <circle cx="90" cy="43" r="5" fill="#14142B"/>
+        <circle cx="92" cy="41" r="2" fill="white"/>
+        <circle cx="76" cy="44" r="6.5" fill="white"/>
+        <circle cx="77" cy="45" r="3.5" fill="#14142B"/>
       </g>
 
-      <!-- Eyes (happy - ^^) -->
+      <!-- 眼睛 (happy ^^) -->
       <g class="eyes-happy">
-        <path d="M35,58 Q42,48 49,58" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M71,58 Q78,48 85,58" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M80,44 Q85,38 90,44" stroke="#14142B" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M70,46 Q74,41 78,46" stroke="#14142B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
       </g>
 
-      <!-- Eyes (angry ><) -->
+      <!-- 眼睛 (angry ><) -->
       <g class="eyes-angry">
-        <line x1="35" y1="50" x2="49" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
-        <line x1="49" y1="50" x2="35" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
-        <line x1="71" y1="50" x2="85" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
-        <line x1="85" y1="50" x2="71" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+        <line x1="82" y1="38" x2="94" y2="48" stroke="#14142B" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="94" y1="38" x2="82" y2="48" stroke="#14142B" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="72" y1="40" x2="82" y2="48" stroke="#14142B" stroke-width="3" stroke-linecap="round"/>
+        <line x1="82" y1="40" x2="72" y2="48" stroke="#14142B" stroke-width="3" stroke-linecap="round"/>
       </g>
 
-      <!-- Eyes (sleep - xx) -->
+      <!-- 眼睛 (sleep 闭眼) -->
       <g class="eyes-sleep">
-        <line x1="35" y1="60" x2="49" y2="58" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="71" y1="60" x2="85" y2="58" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M80,44 Q86,47 92,44" stroke="#14142B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M70,46 Q75,48 80,46" stroke="#14142B" stroke-width="2" fill="none" stroke-linecap="round"/>
       </g>
 
-      <!-- Blush -->
-      <ellipse class="blush" cx="32" cy="72" rx="8" ry="5" fill="#FF9999" opacity="0" />
-      <ellipse class="blush" cx="88" cy="72" rx="8" ry="5" fill="#FF9999" opacity="0" />
+      <!-- 眼睛 (sad 泪眼) -->
+      <g class="eyes-sad">
+        <circle cx="88" cy="42" r="8" fill="white"/>
+        <circle cx="89" cy="43" r="4.5" fill="#14142B"/>
+        <path d="M86,52 Q88,58 90,52" stroke="#8FB0FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="76" cy="44" r="6" fill="white"/>
+        <circle cx="77" cy="45" r="3" fill="#14142B"/>
+      </g>
 
-      <!-- Mouth -->
-      <path d="M52,78 Q60,86 68,78" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" id="mouth"/>
+      <!-- 嘴 -->
+      <path d="M80,58 Q88,63 97,58" stroke="#2839C4" stroke-width="2.5" fill="none" stroke-linecap="round" id="mouth"/>
+      <!-- 生气嘴 -->
+      <path class="mouth-angry" d="M80,61 Q88,56 97,61" stroke="#2839C4" stroke-width="2.5" fill="none" stroke-linecap="round" style="display:none"/>
+      <style>
+        .state-angry #mouth { display: none; }
+        .state-angry .mouth-angry { display: block !important; }
+      </style>
 
-      <!-- Nose -->
-      <ellipse cx="60" cy="70" rx="3" ry="2" fill="#FFA0B0" />
-
-      <!-- Whiskers -->
-      <line x1="15" y1="65" x2="35" y2="68" stroke="#DDD" stroke-width="1.5" />
-      <line x1="15" y1="72" x2="35" y2="72" stroke="#DDD" stroke-width="1.5" />
-      <line x1="85" y1="68" x2="105" y2="65" stroke="#DDD" stroke-width="1.5" />
-      <line x1="85" y1="72" x2="105" y2="72" stroke="#DDD" stroke-width="1.5" />
-
-      <!-- Paws -->
-      <ellipse cx="40" cy="105" rx="15" ry="10" fill="#FCE4EC" />
-      <ellipse cx="80" cy="105" rx="15" ry="10" fill="#FCE4EC" />
-      <ellipse cx="40" cy="103" rx="4" ry="3" fill="#FFC4D0" />
-      <ellipse cx="80" cy="103" rx="4" ry="3" fill="#FFC4D0" />
+      <!-- 腮红 -->
+      <ellipse class="blush" cx="70" cy="56" rx="6" ry="4" fill="#FF9DB0" opacity="0" />
+      <ellipse class="blush" cx="98" cy="54" rx="6" ry="4" fill="#FF9DB0" opacity="0" />
     </svg>
   </div>
 </div>
@@ -172,6 +219,8 @@
     state: 'normal',
     bubbleEl: document.getElementById('bubble'),
     bodyEl: document.getElementById('petBody'),
+    tapStreak: 0,
+    lastTapTime: 0,
 
     showBubble(text, duration) {
       this.bubbleEl.textContent = text;
@@ -187,47 +236,70 @@
       this.state = state || 'normal';
     },
 
+    // 连续戳5次 -> 沮丧鱼干模式
+    countTap() {
+      const now = Date.now();
+      if (now - this.lastTapTime < 1500) {
+        this.tapStreak++;
+      } else {
+        this.tapStreak = 1;
+      }
+      this.lastTapTime = now;
+      if (this.tapStreak === 5) {
+        this.setState('sad');
+        this.showBubble('呜……我是发霉的鱼干了', 4000);
+        setTimeout(() => this.setState('normal'), 5000);
+        broadcastPetEvent('tap5');
+      } else if (this.tapStreak > 5) {
+        this.showBubble('大肥鱼！大蠢鱼！小杂鱼！', 2500);
+        broadcastPetEvent('tap5');
+      }
+    },
+
     onTap() {
-      this.showBubble('\u1d49\u1d4a\u1d50\u1d49~', 1500);
+      this.showBubble('服务器繁忙，请稍后再试~', 1800);
       this.setState('happy');
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2000);
+      this.countTap();
       broadcastPetEvent('tap');
     },
 
     onDoubleTap() {
-      this.showBubble('\u2764\ufe0f \u1d48\u1d43\u1d49\u1d49~', 2000);
+      this.showBubble('好的，现在我是这条蓝色大肥鱼了！', 2200);
       this.setState('happy');
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2500);
+      this.tapStreak = 0;
       broadcastPetEvent('doubleTap');
     },
 
     onLongPress() {
-      this.showBubble('\u1d43\u02b0\u1d49\u1d48\uff01\u2102\u1d49\u1d43\u1d49!', 2000);
+      this.showBubble('卧槽，用户彻底怒了！', 2000);
       this.setState('angry');
       this.bodyEl.classList.add('shake');
       setTimeout(() => this.bodyEl.classList.remove('shake'), 600);
       setTimeout(() => this.setState('normal'), 2500);
+      this.tapStreak = 0;
       broadcastPetEvent('longPress');
     },
 
     sleep() {
       this.setState('sleep');
-      this.showBubble('zZZ...', 3000);
+      this.showBubble('Zzz… 服务器休眠中', 3000);
     },
 
     wake() {
       this.setState('happy');
-      this.showBubble('\u1d48\u1d58\u1d4a~', 1500);
+      this.showBubble('嘿~ 我又活了', 1500);
       setTimeout(() => this.setState('normal'), 2000);
     }
   };
 
   // Say hi after load
-  setTimeout(() => petEngine.showBubble('\u1d48\u1d49~', 2000), 1000);
+  setTimeout(() => petEngine.showBubble('你好呀~ 我是DeepSeek大肥鱼', 2500), 1000);
   // Sleep after 30s idle
   setTimeout(() => petEngine.sleep(), 30000);
 
