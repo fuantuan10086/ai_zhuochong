@@ -23,8 +23,8 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val PET_SIZE_DP = 120
-        private const val PET_HEIGHT_DP = 160
+        private const val PET_SIZE_DP = 100
+        private const val PET_HEIGHT_DP = 135
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -34,6 +34,60 @@ class OverlayService : Service() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildNotification("\uD83D\uDC3E 我在这里陪你~"))
         setupOverlay()
+        startAppWatcher()
+    }
+
+    // === 前台App监控：切换App时桌宠有反应 ===
+    private var lastForegroundApp: String? = null
+    private val appNames = mapOf(
+        "com.xingin.xhs" to "小红书",
+        "com.ss.android.ugc.aweme" to "抖音",
+        "com.tencent.mm" to "微信",
+        "com.deepseek.chat" to "DeepSeek",
+        "com.psyche.kelivo" to "Kelivo",
+        "com.ai.assistance.operit" to "Operit",
+        "com.android.settings" to "设置",
+        "com.coloros.filemanager" to "文件管理"
+    )
+
+    private fun startAppWatcher() {
+        val handler = Handler(Looper.getMainLooper())
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                try {
+                    val current = getForegroundPackage()
+                    if (current != null && current != lastForegroundApp &&
+                        !current.startsWith("com.example.deskpet")) {
+                        lastForegroundApp = current
+                        val name = appNames[current] ?: "别的App"
+                        overlayView?.evaluateJavascript(
+                            "window.petEngine && window.petEngine.onAppSwitch('$name')", null
+                        )
+                    }
+                } catch (e: Exception) {}
+                handler.postDelayed(this, 3000)
+            }
+        }, 3000)
+    }
+
+    private fun getForegroundPackage(): String? {
+        try {
+            val um = getSystemService(Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+            val end = System.currentTimeMillis()
+            val begin = end - 10000
+            val events = um.queryEvents(begin, end)
+            val event = android.app.usage.UsageEvents.Event()
+            var pkg: String? = null
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    pkg = event.packageName
+                }
+            }
+            return pkg
+        } catch (e: Exception) {
+            return null
+        }
     }
 
     private fun setupOverlay() {
