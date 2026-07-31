@@ -63,6 +63,7 @@ class OverlayService : Service() {
             webViewClient = WebViewClient()
             loadUrl("file:///android_asset/pet.html")
             setOnTouchListener(createTouchListener())
+            addJavascriptInterface(AndroidBridge(), "AndroidBridge")
         }
 
         windowManager?.addView(overlayView, params)
@@ -76,6 +77,22 @@ class OverlayService : Service() {
     private var lastTapTime = 0L
     private var touchStartTime = 0L
     private var hasMoved = false
+    private var draggingNotified = false
+
+    // JS桥接：桌宠5连戳后移动到右下角画圈
+    inner class AndroidBridge {
+        @android.webkit.JavascriptInterface
+        fun moveToCorner() {
+            val dm = resources.displayMetrics
+            val sw = dm.widthPixels
+            val sh = dm.heightPixels
+            val w = params?.width ?: 0
+            val h = params?.height ?: 0
+            params?.x = sw - w - 12
+            params?.y = sh - h - 160
+            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+        }
+    }
 
     private fun createTouchListener(): View.OnTouchListener {
         return View.OnTouchListener { _, event ->
@@ -87,6 +104,7 @@ class OverlayService : Service() {
                     initialTouchY = event.rawY
                     touchStartTime = System.currentTimeMillis()
                     hasMoved = false
+                    draggingNotified = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -94,6 +112,12 @@ class OverlayService : Service() {
                     val dy = (event.rawY - initialTouchY).toInt()
                     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                         hasMoved = true
+                        if (!draggingNotified) {
+                            draggingNotified = true
+                            overlayView?.evaluateJavascript(
+                                "window.petEngine && window.petEngine.setDragging(true)", null
+                            )
+                        }
                         params?.x = initialX + dx
                         params?.y = initialY + dy
                         windowManager?.updateViewLayout(overlayView, params)
@@ -102,6 +126,11 @@ class OverlayService : Service() {
                 }
                 MotionEvent.ACTION_UP -> {
                     val elapsed = System.currentTimeMillis() - touchStartTime
+                    if (hasMoved) {
+                        overlayView?.evaluateJavascript(
+                            "window.petEngine && window.petEngine.setDragging(false)", null
+                        )
+                    }
                     if (!hasMoved) {
                         when {
                             elapsed > 600 -> onLongPress()
