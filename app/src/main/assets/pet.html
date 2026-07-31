@@ -423,18 +423,6 @@
         startCornerTimer();
       }
     },
-        cornerMode = true;
-        clearTimeout(this.tapResetTimer);
-        this.setState('sad');
-        this.showBubble('呜……我emo了，去角落画圈圈', 1500);
-        try { if (window.AndroidBridge) AndroidBridge.moveToCorner(); } catch (e) {}
-        startCornerTimer();
-      } else if (this.tapStreak > 5) {
-        this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
-        startCornerTimer();
-      }
-    },
-
     onTap() {
       if (cornerMode) {
         this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
