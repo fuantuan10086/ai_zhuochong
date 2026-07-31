@@ -78,6 +78,7 @@ class OverlayService : Service() {
     private var touchStartTime = 0L
     private var hasMoved = false
     private var draggingNotified = false
+    private var menuOpen = false
 
     // JS桥接：桌宠5连戳后移动到右下角画圈
     inner class AndroidBridge {
@@ -113,10 +114,46 @@ class OverlayService : Service() {
                 startActivity(webIntent)
             } catch (e: Exception) {}
         }
+
+        // 菜单开关：打开时把触摸交给WebView（按钮才能点），关闭时手势接管
+        @android.webkit.JavascriptInterface
+        fun notifyMenu(open: Boolean) {
+            menuOpen = open
+        }
+
+        // 打开聊天小窗：放大窗口+允许键盘
+        @android.webkit.JavascriptInterface
+        fun openChat() {
+            val dm = resources.displayMetrics
+            val w = (dm.widthPixels * 0.85).toInt()
+            val h = (dm.heightPixels * 0.65).toInt()
+            params?.width = w
+            params?.height = h
+            params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            params?.x = (dm.widthPixels - w) / 2
+            params?.y = 30
+            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+        }
+
+        // 关闭聊天小窗：缩回桌宠
+        @android.webkit.JavascriptInterface
+        fun closeChat() {
+            params?.width = dpToPx(PET_SIZE_DP)
+            params?.height = dpToPx(PET_HEIGHT_DP)
+            params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            params?.x = 50
+            params?.y = 300
+            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+        }
     }
 
     private fun createTouchListener(): View.OnTouchListener {
         return View.OnTouchListener { _, event ->
+            // 菜单打开时：把触摸完全交给WebView，按钮才能点到
+            if (menuOpen) return@OnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params?.x ?: 0
