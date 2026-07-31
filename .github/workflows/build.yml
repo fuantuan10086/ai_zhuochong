@@ -13,7 +13,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - uses: android-actions/setup-android@v3
-      - run: chmod +x gradlew
+      - name: Fix gradle wrapper
+        run: |
+          curl -fsSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar
+          chmod +x gradlew
       - run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
