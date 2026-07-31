@@ -92,6 +92,27 @@ class OverlayService : Service() {
             params?.y = sh - h - 160
             try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
         }
+
+        // 跳转DeepSeek App，没装就打开官网
+        @android.webkit.JavascriptInterface
+        fun openLink() {
+            try {
+                val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
+                if (appIntent != null) {
+                    appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(appIntent)
+                    return
+                }
+            } catch (e: Exception) {}
+            try {
+                val webIntent = Intent(
+                    Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://www.deepseek.com")
+                )
+                webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(webIntent)
+            } catch (e: Exception) {}
+        }
     }
 
     private fun createTouchListener(): View.OnTouchListener {
