@@ -19,15 +19,14 @@
   #pet-container {
     width: 120px;
     height: 150px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 4px;
+    position: relative;
   }
 
   .pet-body {
-    position: relative;
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 90px;
     height: 100px;
     display: flex;
@@ -45,20 +44,27 @@
   }
 
   .bubble {
-    background: rgba(255,255,255,0.96);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.97);
     border-radius: 12px;
-    padding: 4px 9px;
-    font-size: 12px;
-    line-height: 1.35;
+    padding: 4px 8px;
+    font-size: 11.5px;
+    line-height: 1.3;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
     color: #333;
     max-width: 112px;
+    max-height: 52px;
+    overflow: hidden;
     word-break: break-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
     opacity: 0;
     transition: opacity 0.25s;
-    position: relative;
-    margin-bottom: 3px;
     z-index: 10;
   }
   .bubble.show { opacity: 1; }
