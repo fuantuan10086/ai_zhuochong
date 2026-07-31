@@ -82,37 +82,43 @@ class OverlayService : Service() {
 
     // JS桥接：桌宠5连戳后移动到右下角画圈
     inner class AndroidBridge {
+        private val uiHandler = Handler(Looper.getMainLooper())
+
         @android.webkit.JavascriptInterface
         fun moveToCorner() {
-            val dm = resources.displayMetrics
-            val sw = dm.widthPixels
-            val sh = dm.heightPixels
-            val w = params?.width ?: 0
-            val h = params?.height ?: 0
-            params?.x = sw - w - 12
-            params?.y = sh - h - 160
-            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            uiHandler.post {
+                val dm = resources.displayMetrics
+                val sw = dm.widthPixels
+                val sh = dm.heightPixels
+                val w = params?.width ?: 0
+                val h = params?.height ?: 0
+                params?.x = sw - w - 12
+                params?.y = sh - h - 160
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
         }
 
         // 跳转DeepSeek App，没装就打开官网
         @android.webkit.JavascriptInterface
         fun openLink() {
-            try {
-                val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
-                if (appIntent != null) {
-                    appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(appIntent)
-                    return
-                }
-            } catch (e: Exception) {}
-            try {
-                val webIntent = Intent(
-                    Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://www.deepseek.com")
-                )
-                webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(webIntent)
-            } catch (e: Exception) {}
+            uiHandler.post {
+                try {
+                    val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
+                    if (appIntent != null) {
+                        appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(appIntent)
+                        return@post
+                    }
+                } catch (e: Exception) {}
+                try {
+                    val webIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://www.deepseek.com")
+                    )
+                    webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(webIntent)
+                } catch (e: Exception) {}
+            }
         }
 
         // 菜单开关：打开时把触摸交给WebView（按钮才能点），关闭时手势接管
@@ -121,32 +127,36 @@ class OverlayService : Service() {
             menuOpen = open
         }
 
-        // 打开聊天小窗：放大窗口+允许键盘
+        // 打开聊天小窗：放大窗口+允许键盘（必须回UI线程）
         @android.webkit.JavascriptInterface
         fun openChat() {
-            val dm = resources.displayMetrics
-            val w = (dm.widthPixels * 0.85).toInt()
-            val h = (dm.heightPixels * 0.65).toInt()
-            params?.width = w
-            params?.height = h
-            params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-            params?.x = (dm.widthPixels - w) / 2
-            params?.y = 30
-            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            uiHandler.post {
+                val dm = resources.displayMetrics
+                val w = (dm.widthPixels * 0.85).toInt()
+                val h = (dm.heightPixels * 0.65).toInt()
+                params?.width = w
+                params?.height = h
+                params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                params?.x = (dm.widthPixels - w) / 2
+                params?.y = 30
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
         }
 
-        // 关闭聊天小窗：缩回桌宠
+        // 关闭聊天小窗：缩回桌宠（必须回UI线程）
         @android.webkit.JavascriptInterface
         fun closeChat() {
-            params?.width = dpToPx(PET_SIZE_DP)
-            params?.height = dpToPx(PET_HEIGHT_DP)
-            params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            params?.x = 50
-            params?.y = 300
-            try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            uiHandler.post {
+                params?.width = dpToPx(PET_SIZE_DP)
+                params?.height = dpToPx(PET_HEIGHT_DP)
+                params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                params?.x = 50
+                params?.y = 300
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
         }
     }
 
