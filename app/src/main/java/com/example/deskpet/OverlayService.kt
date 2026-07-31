@@ -63,6 +63,17 @@ class OverlayService : Service() {
             webViewClient = WebViewClient()
             loadUrl("file:///android_asset/pet.html")
             setOnTouchListener(createTouchListener())
+            // 聊天模式按返回键关闭聊天窗
+            setOnKeyListener { _, keyCode, event ->
+                if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP && chatOpen) {
+                    overlayView?.evaluateJavascript(
+                        "window.closeChatView && window.closeChatView()", null
+                    )
+                    true
+                } else {
+                    false
+                }
+            }
             addJavascriptInterface(AndroidBridge(), "AndroidBridge")
         }
 
@@ -79,6 +90,7 @@ class OverlayService : Service() {
     private var hasMoved = false
     private var draggingNotified = false
     private var menuOpen = false
+    private var chatOpen = false
 
     // JS桥接：桌宠5连戳后移动到右下角画圈
     inner class AndroidBridge {
@@ -127,13 +139,20 @@ class OverlayService : Service() {
             menuOpen = open
         }
 
+        // 聊天窗开关：打开时触摸全部交给WebView（按钮/键盘可用）
+        @android.webkit.JavascriptInterface
+        fun notifyChat(open: Boolean) {
+            chatOpen = open
+        }
+
         // 打开聊天小窗：放大窗口+允许键盘（必须回UI线程）
         @android.webkit.JavascriptInterface
         fun openChat() {
             uiHandler.post {
+                chatOpen = true
                 val dm = resources.displayMetrics
-                val w = (dm.widthPixels * 0.85).toInt()
-                val h = (dm.heightPixels * 0.65).toInt()
+                val w = Math.min((dm.widthPixels * 0.80).toInt(), dpToPx(360))
+                val h = (dm.heightPixels * 0.45).toInt()
                 params?.width = w
                 params?.height = h
                 params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -149,6 +168,7 @@ class OverlayService : Service() {
         @android.webkit.JavascriptInterface
         fun closeChat() {
             uiHandler.post {
+                chatOpen = false
                 params?.width = dpToPx(PET_SIZE_DP)
                 params?.height = dpToPx(PET_HEIGHT_DP)
                 params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -162,8 +182,8 @@ class OverlayService : Service() {
 
     private fun createTouchListener(): View.OnTouchListener {
         return View.OnTouchListener { _, event ->
-            // 菜单打开时：把触摸完全交给WebView，按钮才能点到
-            if (menuOpen) return@OnTouchListener false
+            // 菜单或聊天打开时：把触摸完全交给WebView（按钮/输入框才能用）
+            if (menuOpen || chatOpen) return@OnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params?.x ?: 0
