@@ -35,6 +35,37 @@ class OverlayService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification("\uD83D\uDC3E 我在这里陪你~"))
         setupOverlay()
         startAppWatcher()
+        // 充电状态监听：充电时显示充电CG
+        val filter = IntentFilter()
+        filter.addAction(Intent.ACTION_POWER_CONNECTED)
+        filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(powerReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(powerReceiver, filter)
+        }
+        uiHandler.postDelayed({ notifyCharging() }, 2500)
+    }
+
+    private val uiHandler = Handler(Looper.getMainLooper())
+
+    private val powerReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val charging = intent.action == Intent.ACTION_POWER_CONNECTED
+            overlayView?.evaluateJavascript(
+                "window.petEngine && window.petEngine.setCharging($charging)", null
+            )
+        }
+    }
+
+    private fun notifyCharging() {
+        try {
+            val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
+            val charging = bm.isCharging
+            overlayView?.evaluateJavascript(
+                "window.petEngine && window.petEngine.setCharging($charging)", null
+            )
+        } catch (e: Exception) {}
     }
 
     // === 前台App监控：切换App时桌宠有反应 ===
@@ -179,18 +210,34 @@ class OverlayService : Service() {
             }
         }
 
-        // 跳转DeepSeek App，没装就打开官网
+        // 跳转DeepSeek App，没装或受限就打开官网
         @android.webkit.JavascriptInterface
         fun openLink() {
             uiHandler.post {
+                fun launchApp(): Boolean {
+                    try {
+                        val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
+                        if (appIntent != null) {
+                            appIntent.addFlags(
+                                Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                            )
+                            startActivity(appIntent)
+                            return true
+                        }
+                    } catch (e: Exception) {}
+                    return false
+                }
+                if (launchApp()) return@post
+                // 第二次尝试：先把自己拉前台（绕过ColorOS后台弹窗限制）
                 try {
-                    val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
-                    if (appIntent != null) {
-                        appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(appIntent)
-                        return@post
-                    }
+                    val self = Intent(this@OverlayService, MainActivity::class.java)
+                    self.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(self)
                 } catch (e: Exception) {}
+                try { Thread.sleep(400) } catch (e: Exception) {}
+                if (launchApp()) return@post
+                // 兜底：官网
                 try {
                     val webIntent = Intent(
                         Intent.ACTION_VIEW,
