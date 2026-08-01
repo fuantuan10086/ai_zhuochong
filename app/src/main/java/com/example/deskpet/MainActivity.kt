@@ -22,8 +22,56 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(android.R.layout.simple_list_item_1)
-
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = android.graphics.Gravity.CENTER
+            setPadding(40, 40, 40, 40)
+        }
+        val title = android.widget.TextView(this).apply {
+            text = "🐋 AI桌宠"
+            textSize = 22f
+            gravity = android.graphics.Gravity.CENTER
+            setTextColor(0xFF4D6BFE.toInt())
+        }
+        val subtitle = android.widget.TextView(this).apply {
+            text = "DeepSeek蓝色大肥鱼 · 养成桌宠"
+            textSize = 13f
+            gravity = android.graphics.Gravity.CENTER
+            setTextColor(0xFF888888.toInt())
+            setPadding(0, 8, 0, 24)
+        }
+        val btnStart = android.widget.Button(this).apply {
+            text = "启动桌宠"
+            textSize = 16f
+            setOnClickListener { checkPermissionsAndStart() }
+        }
+        val btnDeepSeek = android.widget.Button(this).apply {
+            text = "🚀 跳转 DeepSeek App"
+            textSize = 16f
+            setOnClickListener {
+                val i = Intent(this@MainActivity, DeepSeekLauncherActivity::class.java)
+                startActivity(i)
+            }
+        }
+        val btnSettings = android.widget.Button(this).apply {
+            text = "⚙️ 系统设置（悬浮窗/后台弹出界面）"
+            textSize = 14f
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+            }
+        }
+        layout.addView(title)
+        layout.addView(subtitle)
+        layout.addView(btnStart)
+        layout.addView(btnDeepSeek, android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 16 })
+        layout.addView(btnSettings, android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 16 })
+        setContentView(layout)
         checkPermissionsAndStart()
     }
 
