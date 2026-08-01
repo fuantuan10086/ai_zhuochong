@@ -317,7 +317,7 @@ class OverlayService : Service() {
             if (chatOpen) {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        val headH = (overlayView.height * 0.16f).toInt().coerceAtLeast(dpToPx(40))
+                        val headH = ((overlayView?.height ?: 0) * 0.16f).toInt().coerceAtLeast(dpToPx(40))
                         if (event.y < headH) {
                             chatDragging = true
                             dragStartX = params?.x ?: 0
