@@ -480,6 +480,7 @@
       }
     },
     onTap() {
+      if (this.state === 'sleep') { this.wake(); return; }
       if (cornerMode) {
         this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
         startCornerTimer();
@@ -494,6 +495,7 @@
     },
 
     onDoubleTap() {
+      if (this.state === 'sleep') { this.wake(); return; }
       if (cornerMode) {
         this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
         startCornerTimer();
@@ -507,6 +509,7 @@
     },
 
     onLongPress() {
+      if (this.state === 'sleep') { this.wake(); return; }
       if (cornerMode) {
         this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
         startCornerTimer();
@@ -544,6 +547,20 @@
   }
   setInterval(randomIdle, 12000);
 
+  // ===== 挂机睡眠状态机：1分钟不碰就睡觉，一碰就醒 =====
+  let lastInteractTime = Date.now();
+  document.addEventListener('touchstart', function () {
+    lastInteractTime = Date.now();
+  }, true);
+  setInterval(function () {
+    if (cornerMode || petEngine.chargingActive) return;
+    if (petEngine.state === 'sleep') {
+      if (Date.now() - lastInteractTime < 60000) petEngine.wake();
+    } else if (Date.now() - lastInteractTime > 60000) {
+      petEngine.sleep();
+    }
+  }, 4000);
+
   // 切换App时桌宠反应
   petEngine.onAppSwitch = function (appName) {
     if (cornerMode) {
@@ -575,7 +592,7 @@
     petEngine.showBubble('你好呀~ 我是DeepSeek大肥鱼！', 2500);
   }, 800);
   // 60秒没动静 -> 睡觉
-  setTimeout(() => petEngine.sleep(), 60000);
+  
 
   // ===== SUPABASE REALTIME (AI SOUL LINK) =====
   const SUPABASE_URL = 'https://lvrsjwmyvltggbicrsnp.supabase.co';
