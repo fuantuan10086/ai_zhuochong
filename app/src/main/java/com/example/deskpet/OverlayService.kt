@@ -178,6 +178,12 @@ class OverlayService : Service() {
     private var draggingNotified = false
     private var menuOpen = false
     private var chatOpen = false
+    // 聊天窗拖动状态
+    private var chatDragging = false
+    private var dragStartX = 0
+    private var dragStartY = 0
+    private var dragTouchX = 0f
+    private var dragTouchY = 0f
 
     private var savedX = 50
     private var savedY = 300
@@ -212,43 +218,48 @@ class OverlayService : Service() {
             }
         }
 
-        // 跳转DeepSeek App，没装或受限就打开官网
+        // 跳转DeepSeek App：先透明Activity直启，被拦就发通知（通知点击启动有系统豁免）
         @android.webkit.JavascriptInterface
         fun openLink() {
             uiHandler.post {
-                fun launchApp(): Boolean {
-                    try {
-                        val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
-                        if (appIntent != null) {
-                            appIntent.addFlags(
-                                Intent.FLAG_ACTIVITY_NEW_TASK or
-                                Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-                            )
-                            startActivity(appIntent)
-                            return true
-                        }
-                    } catch (e: Exception) {}
-                    return false
+                try {
+                    val i = Intent(this@OverlayService, DeepSeekLauncherActivity::class.java)
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(i)
+                } catch (e: Exception) {
+                    showDeepSeekNotification()
                 }
-                if (launchApp()) return@post
-                // 第二次尝试：先把自己拉前台（绕过ColorOS后台弹窗限制）
-                try {
-                    val self = Intent(this@OverlayService, MainActivity::class.java)
-                    self.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(self)
-                } catch (e: Exception) {}
-                try { Thread.sleep(400) } catch (e: Exception) {}
-                if (launchApp()) return@post
-                // 兜底：官网
-                try {
+            }
+        }
+
+        // 通知兜底：用户点通知直接进DeepSeek（绕过ColorOS后台启动限制）
+        private fun showDeepSeekNotification() {
+            try {
+                val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
+                val contentIntent = if (appIntent != null) {
+                    PendingIntent.getActivity(
+                        this@OverlayService, 2002, appIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                } else {
                     val webIntent = Intent(
                         Intent.ACTION_VIEW,
                         android.net.Uri.parse("https://www.deepseek.com")
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    PendingIntent.getActivity(
+                        this@OverlayService, 2002, webIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(webIntent)
-                } catch (e: Exception) {}
-            }
+                }
+                val noti = NotificationCompat.Builder(this@OverlayService, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("\uD83D\uDC0B 点我打开DeepSeek！")
+                    .setContentText("系统不让直接跳，点一下就进DeepSeek App～")
+                    .setContentIntent(contentIntent)
+                    .setAutoCancel(true)
+                    .build()
+                getSystemService(NotificationManager::class.java).notify(2002, noti)
+            } catch (e: Exception) {}
         }
 
         // 菜单开关：打开时把触摸交给WebView（按钮才能点），关闭时手势接管
@@ -300,8 +311,42 @@ class OverlayService : Service() {
 
     private fun createTouchListener(): View.OnTouchListener {
         return View.OnTouchListener { _, event ->
-            // 菜单或聊天打开时：把触摸完全交给WebView（按钮/输入框才能用）
-            if (menuOpen || chatOpen) return@OnTouchListener false
+            // 菜单打开时：把触摸完全交给WebView（按钮才能点）
+            if (menuOpen) return@OnTouchListener false
+            // 聊天窗打开时：标题栏区域可拖动窗口，其余交给WebView
+            if (chatOpen) {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        val headH = (overlayView.height * 0.16f).toInt().coerceAtLeast(dpToPx(40))
+                        if (event.y < headH) {
+                            chatDragging = true
+                            dragStartX = params?.x ?: 0
+                            dragStartY = params?.y ?: 0
+                            dragTouchX = event.rawX
+                            dragTouchY = event.rawY
+                            return@OnTouchListener true
+                        }
+                        return@OnTouchListener false
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (chatDragging) {
+                            params?.x = dragStartX + (event.rawX - dragTouchX).toInt()
+                            params?.y = dragStartY + (event.rawY - dragTouchY).toInt()
+                            windowManager?.updateViewLayout(overlayView, params)
+                            return@OnTouchListener true
+                        }
+                        return@OnTouchListener false
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (chatDragging) {
+                            chatDragging = false
+                            return@OnTouchListener true
+                        }
+                        return@OnTouchListener false
+                    }
+                }
+                return@OnTouchListener false
+            }
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params?.x ?: 0
