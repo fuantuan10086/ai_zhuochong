@@ -41,6 +41,7 @@ class OverlayService : Service() {
         val filter = IntentFilter()
         filter.addAction(Intent.ACTION_POWER_CONNECTED)
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+        filter.addAction(Intent.ACTION_BATTERY_LOW)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(powerReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -53,10 +54,14 @@ class OverlayService : Service() {
 
     private val powerReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val charging = intent.action == Intent.ACTION_POWER_CONNECTED
-            overlayView?.evaluateJavascript(
-                "window.petEngine && window.petEngine.setCharging($charging)", null
-            )
+            when (intent.action) {
+                Intent.ACTION_POWER_CONNECTED -> overlayView?.evaluateJavascript(
+                    "window.petEngine && window.petEngine.setCharging(true)", null)
+                Intent.ACTION_POWER_DISCONNECTED -> overlayView?.evaluateJavascript(
+                    "window.petEngine && window.petEngine.setCharging(false)", null)
+                Intent.ACTION_BATTERY_LOW -> overlayView?.evaluateJavascript(
+                    "window.petEngine && window.petEngine.lowBattery()", null)
+            }
         }
     }
 
@@ -217,6 +222,22 @@ class OverlayService : Service() {
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
+        // 双击逃跑：随机移动到屏幕其他位置
+        @android.webkit.JavascriptInterface
+        fun moveRandom() {
+            uiHandler.post {
+                val dm = resources.displayMetrics
+                val sw = dm.widthPixels
+                val sh = dm.heightPixels
+                val w = params?.width ?: 0
+                val h = params?.height ?: 0
+                val nx = (50 + Math.random() * (sw - w - 100)).toInt()
+                val ny = (100 + Math.random() * (sh - h - 200)).toInt()
+                params?.x = nx
+                params?.y = ny
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
+        }
 
         // 跳转DeepSeek App：先透明Activity直启，1.5秒后确认没起来就弹通知
         @android.webkit.JavascriptInterface
@@ -299,8 +320,8 @@ class OverlayService : Service() {
             uiHandler.post {
                 chatOpen = true
                 val dm = resources.displayMetrics
-                val w = Math.min((dm.widthPixels * 0.80).toInt(), dpToPx(360))
-                val h = (dm.heightPixels * 0.45).toInt()
+                val w = Math.min((dm.widthPixels * 0.86).toInt(), dpToPx(400))
+                val h = (dm.heightPixels * 0.52).toInt()
                 params?.width = w
                 params?.height = h
                 params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
