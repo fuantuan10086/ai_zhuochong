@@ -357,9 +357,10 @@ class OverlayService : Service() {
         overlayView?.viewTreeObserver?.addOnGlobalLayoutListener {
             try {
                 if (!chatOpen) return@addOnGlobalLayoutListener
+                val ov = overlayView ?: return@addOnGlobalLayoutListener
                 val rect = android.graphics.Rect()
-                overlayView.getWindowVisibleDisplayFrame(rect)
-                val kbH = overlayView.rootView.height - rect.bottom
+                ov.getWindowVisibleDisplayFrame(rect)
+                val kbH = ov.rootView.height - rect.bottom
                 if (kbH > 150) {
                     if (keyboardVisible) return@addOnGlobalLayoutListener
                     keyboardVisible = true
