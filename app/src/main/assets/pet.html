@@ -416,6 +416,17 @@
     },
 
     setState(state) {
+      // 角落模式：只保持沮丧鲸鱼
+      if (cornerMode && state !== 'sad') return;
+      // 充电中不睡觉
+      if (this.chargingActive && state === 'sleep') return;
+      // 充电中：短暂显示互动表情后自动回到充电形态
+      if (this.chargingActive && state !== 'charging') {
+        clearTimeout(this.chargeBackTimer);
+        this.chargeBackTimer = setTimeout(() => {
+          if (this.chargingActive && !cornerMode) this.setState('charging');
+        }, 2500);
+      }
       this.bodyEl.className = 'pet-body' + (state ? ' state-' + state : '');
       this.state = state || 'normal';
     },
@@ -509,6 +520,7 @@
     },
 
     sleep() {
+      if (this.chargingActive) return;
       this.setState('sleep');
       this.showBubble('Zzz… 睡觉中，别吵', 3000);
     },
@@ -534,6 +546,11 @@
 
   // 切换App时桌宠反应
   petEngine.onAppSwitch = function (appName) {
+    if (cornerMode) {
+      petEngine.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
+      startCornerTimer();
+      return;
+    }
     petEngine.setState('happy');
     petEngine.showBubble('你去' + appName + '啦~', 1800);
     setTimeout(() => petEngine.setState('normal'), 2000);
