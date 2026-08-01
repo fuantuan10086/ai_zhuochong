@@ -155,6 +155,7 @@ class OverlayService : Service() {
             webViewClient = WebViewClient()
             loadUrl("file:///android_asset/pet.html")
             setOnTouchListener(createTouchListener())
+            attachKeyboardListener()
             // 聊天模式按返回键关闭聊天窗
             setOnKeyListener { _, keyCode, event ->
                 if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP && chatOpen) {
@@ -183,6 +184,7 @@ class OverlayService : Service() {
     private var draggingNotified = false
     private var menuOpen = false
     private var chatOpen = false
+    private var keyboardVisible = false
     // 聊天窗拖动状态
     private var chatDragging = false
     private var dragStartX = 0
@@ -338,6 +340,7 @@ class OverlayService : Service() {
         fun closeChat() {
             uiHandler.post {
                 chatOpen = false
+                keyboardVisible = false
                 params?.width = dpToPx(PET_SIZE_DP)
                 params?.height = dpToPx(PET_HEIGHT_DP)
                 params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -346,6 +349,43 @@ class OverlayService : Service() {
                 params?.y = 300
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
+        }
+    }
+
+    // 键盘弹出时把聊天窗移到键盘上方，保证对话区可见
+    private fun attachKeyboardListener() {
+        overlayView?.viewTreeObserver?.addOnGlobalLayoutListener {
+            try {
+                if (!chatOpen) return@addOnGlobalLayoutListener
+                val rect = android.graphics.Rect()
+                overlayView.getWindowVisibleDisplayFrame(rect)
+                val kbH = overlayView.rootView.height - rect.bottom
+                if (kbH > 150) {
+                    if (keyboardVisible) return@addOnGlobalLayoutListener
+                    keyboardVisible = true
+                    val dm = resources.displayMetrics
+                    val w = params?.width ?: 0
+                    var h = params?.height ?: 0
+                    val maxH = rect.height() - 100
+                    if (h > maxH) {
+                        h = maxH
+                        params?.height = h
+                    }
+                    params?.y = rect.top + rect.height() - h - 10
+                    params?.x = rect.left + (rect.width() - w) / 2
+                    windowManager?.updateViewLayout(overlayView, params)
+                } else if (keyboardVisible) {
+                    keyboardVisible = false
+                    val dm = resources.displayMetrics
+                    val w = Math.min((dm.widthPixels * 0.86).toInt(), dpToPx(400))
+                    val h = (dm.heightPixels * 0.52).toInt()
+                    params?.width = w
+                    params?.height = h
+                    params?.x = (dm.widthPixels - w) / 2
+                    params?.y = 30
+                    windowManager?.updateViewLayout(overlayView, params)
+                }
+            } catch (e: Exception) {}
         }
     }
 
