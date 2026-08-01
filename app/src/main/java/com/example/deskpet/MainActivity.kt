@@ -3,7 +3,7 @@ package com.example.deskpet
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Gravity
+import android.view.Gravity
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -25,19 +25,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val layout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
-            gravity = android.graphics.Gravity.CENTER
+            gravity = Gravity.CENTER
             setPadding(40, 40, 40, 40)
         }
         val title = android.widget.TextView(this).apply {
             text = "🐋 AI桌宠"
             textSize = 22f
-            gravity = android.graphics.Gravity.CENTER
+            gravity = Gravity.CENTER
             setTextColor(0xFF4D6BFE.toInt())
         }
         val subtitle = android.widget.TextView(this).apply {
             text = "DeepSeek蓝色大肥鱼 · 养成桌宠"
             textSize = 13f
-            gravity = android.graphics.Gravity.CENTER
+            gravity = Gravity.CENTER
             setTextColor(0xFF888888.toInt())
             setPadding(0, 8, 0, 24)
         }
