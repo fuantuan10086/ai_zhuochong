@@ -218,7 +218,7 @@ class OverlayService : Service() {
             }
         }
 
-        // 跳转DeepSeek App：先透明Activity直启，被拦就发通知（通知点击启动有系统豁免）
+        // 跳转DeepSeek App：先透明Activity直启，1.5秒后确认没起来就弹通知
         @android.webkit.JavascriptInterface
         fun openLink() {
             uiHandler.post {
@@ -226,9 +226,28 @@ class OverlayService : Service() {
                     val i = Intent(this@OverlayService, DeepSeekLauncherActivity::class.java)
                     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     startActivity(i)
-                } catch (e: Exception) {
-                    showDeepSeekNotification()
-                }
+                } catch (e: Exception) {}
+                // 延迟检查DeepSeek是否真的到了前台，没到就弹通知兜底
+                uiHandler.postDelayed({
+                    try {
+                        var top = ""
+                        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+                        val now = System.currentTimeMillis()
+                        val stats = usm.queryEvents(now - 3000, now)
+                        val ev = android.app.usage.UsageEvents.Event()
+                        var lastPkg: String? = null
+                        while (stats.hasNextEvent()) {
+                            stats.getNextEvent(ev)
+                            if (ev.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED || ev.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                                lastPkg = ev.packageName
+                            }
+                        }
+                        top = lastPkg ?: ""
+                        if (top != "com.deepseek.chat") showDeepSeekNotification()
+                    } catch (e: Exception) {
+                        showDeepSeekNotification()
+                    }
+                }, 1600)
             }
         }
 
@@ -318,7 +337,9 @@ class OverlayService : Service() {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         val headH = ((overlayView?.height ?: 0) * 0.16f).toInt().coerceAtLeast(dpToPx(40))
-                        if (event.y < headH) {
+                        // 标题栏区域可拖动，但右上角✕按钮区域放行给WebView
+                        val xBtnW = dpToPx(52)
+                        if (event.y < headH && event.x < (overlayView?.width ?: 0) - xBtnW) {
                             chatDragging = true
                             dragStartX = params?.x ?: 0
                             dragStartY = params?.y ?: 0
