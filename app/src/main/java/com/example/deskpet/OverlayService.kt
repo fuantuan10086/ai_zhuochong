@@ -240,6 +240,14 @@ class OverlayService : Service() {
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
+        // 振动反馈（JS调用）
+        @android.webkit.JavascriptInterface
+        fun vibrate(ms: Int) {
+            try {
+                val v = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                if (v != null && v.hasVibrator()) v.vibrate(ms.toLong())
+            } catch (e: Exception) {}
+        }
         // 双击逃跑：随机移动到屏幕其他位置
         @android.webkit.JavascriptInterface
         fun moveRandom() {
@@ -499,18 +507,30 @@ class OverlayService : Service() {
     }
 
     private fun onTap() {
+        try {
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (v != null && v.hasVibrator()) v.vibrate(18)
+        } catch (e: Exception) {}
         overlayView?.evaluateJavascript(
             "window.petEngine && window.petEngine.onTap()", null
         )
     }
 
     private fun onDoubleTap() {
+        try {
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (v != null && v.hasVibrator()) v.vibrate(30)
+        } catch (e: Exception) {}
         overlayView?.evaluateJavascript(
             "window.petEngine && window.petEngine.onDoubleTap()", null
         )
     }
 
     private fun onLongPress() {
+        try {
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (v != null && v.hasVibrator()) v.vibrate(45)
+        } catch (e: Exception) {}
         overlayView?.evaluateJavascript(
             "window.petEngine && window.petEngine.onLongPress()", null
         )
