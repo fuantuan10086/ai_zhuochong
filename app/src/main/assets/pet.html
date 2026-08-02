@@ -35,7 +35,7 @@
   }
 
   .whale-body {
-    width: 72px;
+    width: 60px;
     height: auto;
     transform-origin: center bottom;
     transition: transform 0.3s;
@@ -45,9 +45,9 @@
 
   .combo-badge {
     position: absolute;
-    top: -6px;
+    top: 2px;
     left: 50%;
-    transform: translateX(-50%) translateY(-100%);
+    transform: translateX(-50%);
     color: #FF2D2D;
     font-size: 18px;
     font-weight: 900;
@@ -57,12 +57,12 @@
     animation: comboPulse 0.5s ease-out;
   }
   @keyframes comboPulse {
-    0% { transform: translateX(-50%) translateY(-100%) scale(1.6); }
-    100% { transform: translateX(-50%) translateY(-100%) scale(1); }
+    0% { transform: translateX(-50%) scale(1.6); }
+    100% { transform: translateX(-50%) scale(1); }
   }
   .bubble {
     position: absolute;
-    top: 14px;
+    top: 30px;
     left: 50%;
     transform: translateX(-50%);
     width: 126px;
@@ -116,7 +116,7 @@
   .state-sleep .whale-body { filter: saturate(0.5) brightness(0.9); }
   .sad-whale {
     display: none;
-    width: 72px;
+    width: 60px;
     height: auto;
     transform-origin: center bottom;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
@@ -160,7 +160,7 @@
   }
   .sleep-whale, .charge-whale {
     display: none;
-    width: 72px;
+    width: 60px;
     height: auto;
     transform-origin: center bottom;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
