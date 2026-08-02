@@ -35,7 +35,7 @@
   }
 
   .whale-body {
-    width: 88px;
+    width: 72px;
     height: auto;
     transform-origin: center bottom;
     transition: transform 0.3s;
@@ -45,11 +45,11 @@
 
   .combo-badge {
     position: absolute;
-    top: -4px;
+    top: -6px;
     left: 50%;
     transform: translateX(-50%) translateY(-100%);
     color: #FF2D2D;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
     text-shadow: 0 2px 0 #FFD700, 0 -2px 0 #FFD700, 2px 0 0 #FFD700, -2px 0 0 #FFD700;
     z-index: 60;
@@ -62,7 +62,7 @@
   }
   .bubble {
     position: absolute;
-    top: 0;
+    top: 14px;
     left: 50%;
     transform: translateX(-50%);
     width: 126px;
@@ -116,7 +116,7 @@
   .state-sleep .whale-body { filter: saturate(0.5) brightness(0.9); }
   .sad-whale {
     display: none;
-    width: 88px;
+    width: 72px;
     height: auto;
     transform-origin: center bottom;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
@@ -160,7 +160,7 @@
   }
   .sleep-whale, .charge-whale {
     display: none;
-    width: 88px;
+    width: 72px;
     height: auto;
     transform-origin: center bottom;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
@@ -616,8 +616,8 @@
         startCornerTimer();
         return;
       }
-      // 连击进行中（2秒内刚戳过）：双击只计数不逃跑
-      if (this.lastTapTime && Date.now() - this.lastTapTime < 2000) {
+      // 连击冲刺中（5连以上）：双击只计数不逃跑（防断连击）
+      if (this.tapStreak >= 5) {
         this.showBubble('别戳啦！', 900);
         this.countTap();
         broadcastPetEvent('doubleTap');
