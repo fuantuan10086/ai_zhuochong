@@ -224,12 +224,19 @@ class OverlayService : Service() {
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
-        // 连续小步移动：配合JS蹦跳动画实现"一蹦一跳跑走"
+        // 连续小步移动（带屏幕边界限制）：配合JS蹦跳动画实现"一蹦一跳跑走"
         @android.webkit.JavascriptInterface
         fun moveStep(dx: Int, dy: Int) {
             uiHandler.post {
-                params?.x = (params?.x ?: 0) + dx
-                params?.y = (params?.y ?: 0) + dy
+                val dm = resources.displayMetrics
+                val sw = dm.widthPixels
+                val sh = dm.heightPixels
+                val w = params?.width ?: 0
+                val h = params?.height ?: 0
+                val nx = ((params?.x ?: 0) + dx).coerceIn(0, (sw - w).coerceAtLeast(0))
+                val ny = ((params?.y ?: 0) + dy).coerceIn(0, (sh - h).coerceAtLeast(0))
+                params?.x = nx
+                params?.y = ny
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
