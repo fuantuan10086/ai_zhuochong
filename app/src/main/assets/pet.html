@@ -168,6 +168,19 @@
     80% { transform: translateX(4px) rotate(2deg); }
   }
 
+  .pet-body.wiggle { animation: wiggleAnim 1.2s ease-in-out; }
+  @keyframes wiggleAnim {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-6deg); }
+    50% { transform: rotate(6deg); }
+    75% { transform: rotate(-4deg); }
+  }
+  .pet-body.spin { animation: spinAnim 1.2s ease-in-out; }
+  @keyframes spinAnim {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
   /* 挂机小动作 */
   .pet-body.hop { animation: idleHop 0.6s ease-in-out; }
   .pet-body.sway { animation: idleSway 1.1s ease-in-out; }
@@ -536,8 +549,8 @@
       this.showBubble('哎哟好疼！我跑！', 1500);
       this.setState('angry');
       clearTimeout(this.tapResetTimer);
-      this.tapResetTimer = setTimeout(() => this.setState('normal'), 2500);
-      try { if (window.AndroidBridge) AndroidBridge.moveRandom(); } catch (e) {}
+      this.tapResetTimer = setTimeout(() => this.setState('normal'), 3000);
+      runAway();
       this.countTap();
       broadcastPetEvent('doubleTap');
       return;
@@ -579,16 +592,46 @@
   };
 
   // 挂机随机小动作（不依赖素材，CSS变形）
-  const idleMoves = ['hop', 'sway', 'peek'];
+  // 双击逃跑：一蹦一跳连续移动
+  function runAway() {
+    if (petEngine._runaway) return;
+    petEngine._runaway = true;
+    const dir = Math.random() > 0.5 ? 1 : -1;
+    const stepX = (28 + Math.random() * 50) * dir;
+    const stepY = (Math.random() < 0.5 ? -1 : 1) * (14 + Math.random() * 26);
+    let n = 0;
+    petEngine._runawayTimer = setInterval(function () {
+      n++;
+      if (n > 10) {
+        clearInterval(petEngine._runawayTimer);
+        petEngine._runaway = false;
+        return;
+      }
+      try { if (window.AndroidBridge) AndroidBridge.moveStep(stepX, stepY); } catch (e) {}
+      petEngine.bodyEl.classList.remove('hop');
+      void petEngine.bodyEl.offsetWidth;
+      petEngine.bodyEl.classList.add('hop');
+    }, 260);
+  }
+
+  const idleMoves = ['hop', 'sway', 'peek', 'wiggle', 'spin'];
   function randomIdle() {
-    if (petEngine.state !== 'normal') return;
+    if (cornerMode || petEngine.chargingActive || petEngine.state === 'sleep') return;
     const move = idleMoves[Math.floor(Math.random() * idleMoves.length)];
-    petEngine.bodyEl.classList.remove('hop', 'sway', 'peek');
+    petEngine.bodyEl.classList.remove('hop', 'sway', 'peek', 'wiggle', 'spin');
     void petEngine.bodyEl.offsetWidth;
     petEngine.bodyEl.classList.add(move);
-    setTimeout(() => petEngine.bodyEl.classList.remove(move), 1200);
+    setTimeout(() => petEngine.bodyEl.classList.remove(move), 1800);
+    // 25%概率走两步（窗口平移，更有生活感）
+    if (Math.random() < 0.25) {
+      const dir = Math.random() > 0.5 ? 1 : -1;
+      try { if (window.AndroidBridge) AndroidBridge.moveStep(16 * dir, 0); } catch (e) {}
+      setTimeout(function () {
+        try { if (window.AndroidBridge) AndroidBridge.moveStep(-16 * dir, 0); } catch (e) {}
+      }, 700);
+    }
   }
-  setInterval(randomIdle, 12000);
+  setInterval(randomIdle, 8000 + Math.random() * 7000);
 
   // ===== 挂机睡眠状态机：1分钟不碰就睡觉，一碰就醒 =====
   let lastInteractTime = Date.now();
@@ -700,6 +743,14 @@
       // 角落/充电模式保持状态，不被随机互动打断
     } else if (cmd.mood) {
       petEngine.setState(cmd.mood);
+      // AI主动表达时伴随动作
+      if (cmd.mood === 'happy') {
+        petEngine.bodyEl.classList.add('hop');
+        setTimeout(() => petEngine.bodyEl.classList.remove('hop'), 800);
+      } else if (cmd.mood === 'angry') {
+        petEngine.bodyEl.classList.add('shake');
+        setTimeout(() => petEngine.bodyEl.classList.remove('shake'), 500);
+      }
     }
     if (cmd.text) {
       if (cmd.chat && document.getElementById('chat-view').classList.contains('open')) {
