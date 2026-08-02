@@ -224,6 +224,15 @@ class OverlayService : Service() {
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
+        // 连续小步移动：配合JS蹦跳动画实现"一蹦一跳跑走"
+        @android.webkit.JavascriptInterface
+        fun moveStep(dx: Int, dy: Int) {
+            uiHandler.post {
+                params?.x = (params?.x ?: 0) + dx
+                params?.y = (params?.y ?: 0) + dy
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
+        }
         // 双击逃跑：随机移动到屏幕其他位置
         @android.webkit.JavascriptInterface
         fun moveRandom() {
