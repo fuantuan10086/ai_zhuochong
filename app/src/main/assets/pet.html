@@ -521,8 +521,9 @@
       if (this.tapStreak === 10) {
         cornerMode = true;
         clearTimeout(this.tapResetTimer);
+        petEngine.bodyEl.classList.remove('hop', 'sway', 'peek', 'wiggle', 'spin', 'shake');
         this.setState('sad');
-        this.showBubble(this.tapStreak + '连击！呜……我emo了，去角落画圈圈', 1800);
+        this.showBubble(this.tapStreak + '连击！呜……我emo了，去角落画圈圈', 3000);
         try { if (window.AndroidBridge) AndroidBridge.vibrate(250); } catch (e) {}
         try { if (window.AndroidBridge) AndroidBridge.moveToCorner(); } catch (e) {}
         startCornerTimer();
@@ -608,14 +609,15 @@
   function runAway() {
     if (petEngine._runaway) return;
     petEngine._runaway = true;
-    const wb = document.getElementById('whaleBody');
+    const wb = document.getElementById('whale');
     if (wb) wb.classList.add('float');
     let phase = 0;
     const phases = [
-      { dir: 1, steps: 4, down: 0 },
-      { dir: -1, steps: 4, down: 0 },
-      { dir: 1, steps: 3, down: 0 },
-      { dir: -1, steps: 6, down: 1 }
+      { dir: 1, steps: 5 },
+      { dir: -1, steps: 5 },
+      { dir: 1, steps: 4 },
+      { dir: -1, steps: 4 },
+      { dir: 1, steps: 6 }
     ];
     function runPhase() {
       if (phase >= phases.length) {
@@ -628,19 +630,18 @@
         wb.classList.remove('face-left', 'face-right');
         wb.classList.add(p.dir > 0 ? 'face-right' : 'face-left');
       }
-      const stepX = 44 * p.dir;
-      const stepY = p.down ? 12 : 0;
+      const stepX = 46 * p.dir;
       let n = 0;
       const iv = setInterval(function () {
         n++;
         if (n > p.steps) {
           clearInterval(iv);
           phase++;
-          setTimeout(runPhase, 260);
+          setTimeout(runPhase, 220);
           return;
         }
-        try { if (window.AndroidBridge) AndroidBridge.moveStep(stepX, stepY); } catch (e) {}
-      }, 95);
+        try { if (window.AndroidBridge) AndroidBridge.moveStep(stepX, 0); } catch (e) {}
+      }, 90);
     }
     runPhase();
   }
