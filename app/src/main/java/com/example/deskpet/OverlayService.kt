@@ -25,8 +25,8 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val PET_SIZE_DP = 112
-        private const val PET_HEIGHT_DP = 152
+        private const val PET_SIZE_DP = 100
+        private const val PET_HEIGHT_DP = 135
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -492,7 +492,7 @@ class OverlayService : Service() {
                     if (!hasMoved) {
                         when {
                             elapsed > 600 -> onLongPress()
-                            System.currentTimeMillis() - lastTapTime < 300 -> onDoubleTap()
+                            System.currentTimeMillis() - lastTapTime < 150 -> onDoubleTap()
                             else -> {
                                 lastTapTime = System.currentTimeMillis()
                                 onTap()
