@@ -298,25 +298,17 @@ class OverlayService : Service() {
             }
         }
 
-        // 通知兜底：用户点通知直接进DeepSeek（绕过ColorOS后台启动限制）
+        // 通知兜底：点通知先拉起桌宠MainActivity（前台化），再自动跳DeepSeek
+        // （ColorOS会拦截一切后台启动Activity，但自己前台后启动其他App不受限）
         private fun showDeepSeekNotification() {
             try {
-                val appIntent = packageManager.getLaunchIntentForPackage("com.deepseek.chat")
-                val contentIntent = if (appIntent != null) {
-                    PendingIntent.getActivity(
-                        this@OverlayService, 2002, appIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                } else {
-                    val webIntent = Intent(
-                        Intent.ACTION_VIEW,
-                        android.net.Uri.parse("https://www.deepseek.com")
-                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    PendingIntent.getActivity(
-                        this@OverlayService, 2002, webIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                }
+                val selfIntent = Intent(this@OverlayService, MainActivity::class.java)
+                    .putExtra("gotoDeepSeek", true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val contentIntent = PendingIntent.getActivity(
+                    this@OverlayService, 2002, selfIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
                 val noti = NotificationCompat.Builder(this@OverlayService, CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
                     .setContentTitle("\uD83D\uDC0B 点我打开DeepSeek！")
