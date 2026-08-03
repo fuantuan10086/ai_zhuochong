@@ -73,6 +73,12 @@ class MainActivity : AppCompatActivity() {
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = 16 })
         setContentView(layout)
+        // 通知"点我打开DeepSeek"：先拉起本Activity（前台化），再自动跳DeepSeek App
+        if (intent?.getBooleanExtra("gotoDeepSeek", false) == true) {
+            startActivity(Intent(this, DeepSeekLauncherActivity::class.java))
+            finish()
+            return
+        }
         checkPermissionsAndStart()
     }
 
