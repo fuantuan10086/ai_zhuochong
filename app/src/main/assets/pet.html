@@ -111,6 +111,7 @@
   .bubble.hide-bubble { opacity: 0 !important; }
   .bubble.love {
     background: linear-gradient(180deg, #FFE4EF, #FFC2D5);
+    white-space: pre-line;
     border: 1.5px solid #FF8FAB;
     color: #C2185B;
     font-size: 15px;
@@ -334,6 +335,15 @@
   .dirty .whale-body {
     filter: sepia(0.45) brightness(0.82) saturate(0.75);
   }
+  /* ===== 饿晕效果（饱腹低） ===== */
+  .hungry .whale-body {
+    animation: hungrySway 1.6s ease-in-out infinite;
+    filter: saturate(0.6) brightness(0.92) hue-rotate(12deg);
+  }
+  @keyframes hungrySway {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(4px) rotate(3deg); }
+  }
 
   /* ===== 聊天小窗 ===== */
   #chat-view {
@@ -349,6 +359,24 @@
     font-size: 13px;
   }
   #chat-view.open { display: flex; }
+  #resize-handle {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #8a93ad;
+    cursor: se-resize;
+    user-select: none;
+    touch-action: none;
+    z-index: 55;
+    border-radius: 8px;
+    background: radial-gradient(circle at 70% 70%, rgba(90,100,140,0.28), transparent 70%);
+  }
   .chat-head {
     display: flex; align-items: center; justify-content: space-between;
     padding: 7px 12px;
@@ -449,6 +477,7 @@
     <input id="chat-input2" placeholder="跟大肥鱼说点啥~" maxlength="80">
     <button onclick="sendChat()">发送</button>
   </div>
+  <div id="resize-handle">↘</div>
 </div>
 <div id="bath-emoji">🛁</div>
 <div id="pet-menu">
@@ -1024,6 +1053,28 @@
     try { if (window.AndroidBridge) AndroidBridge.closeChat(); } catch (e) {}
     try { if (window.AndroidBridge) AndroidBridge.notifyMenu(false); } catch (e) {}
   }
+  // 聊天窗右下角拖拽缩放
+  (function () {
+    const h = document.getElementById('resize-handle');
+    if (!h) return;
+    let sx = 0, sy = 0, active = false;
+    h.addEventListener('touchstart', function (e) {
+      active = true;
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    h.addEventListener('touchmove', function (e) {
+      if (!active) return;
+      const dx = e.touches[0].clientX - sx;
+      const dy = e.touches[0].clientY - sy;
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      try { if (window.AndroidBridge) AndroidBridge.resizeChatBy(dx, dy); } catch (err) {}
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    h.addEventListener('touchend', function () { active = false; });
+  })();
   let pendingChats = [];
   function sendChat() {
     const inp = document.getElementById('chat-input2');
@@ -1049,13 +1100,19 @@
     if (e.key === 'Enter') sendChat();
   });
 
-  // 大脑广播的养成状态
-  let lastDirtiness = 0;
+  // 大脑广播的养成状态：好感度 + 饱腹 + 清洁
+  let petStats = { affection: 0, cleanliness: 10, hunger: 8 };
   function handleAIState(st) {
     if (!st) return;
-    if (st.dirtiness !== undefined) lastDirtiness = st.dirtiness;
-    if (st.dirtiness >= 5) petEngine.bodyEl.classList.add('dirty');
+    if (st.affection !== undefined) petStats.affection = st.affection;
+    if (st.cleanliness !== undefined) petStats.cleanliness = st.cleanliness;
+    if (st.hunger !== undefined) petStats.hunger = st.hunger;
+    // 清洁度低 -> 变脏发灰
+    if (petStats.cleanliness <= 3) petEngine.bodyEl.classList.add('dirty');
     else petEngine.bodyEl.classList.remove('dirty');
+    // 饱腹低 -> 饿晕发蔫
+    if (petStats.hunger <= 2) petEngine.bodyEl.classList.add('hungry');
+    else petEngine.bodyEl.classList.remove('hungry');
   }
 
   connectRealtime();

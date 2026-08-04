@@ -366,6 +366,21 @@ class OverlayService : Service() {
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
             }
         }
+        // 聊天窗右下角拖拽缩放（必须回UI线程）
+        @android.webkit.JavascriptInterface
+        fun resizeChatBy(dx: Int, dy: Int) {
+            uiHandler.post {
+                if (!chatOpen) return@post
+                val dm = resources.displayMetrics
+                var w = (params?.width ?: dpToPx(PET_SIZE_DP)) + dx
+                var h = (params?.height ?: dpToPx(PET_HEIGHT_DP)) + dy
+                w = w.coerceIn(dpToPx(180), (dm.widthPixels * 0.95).toInt())
+                h = h.coerceIn(dpToPx(220), (dm.heightPixels * 0.85).toInt())
+                params?.width = w
+                params?.height = h
+                try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
+        }
     }
 
     // 键盘弹出时把聊天窗移到键盘上方，保证对话区可见
