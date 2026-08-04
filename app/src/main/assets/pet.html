@@ -35,7 +35,7 @@
   }
 
   .whale-body {
-    width: 60px;
+    width: 56px;
     height: auto;
     transform-origin: center bottom;
     transition: transform 0.3s;
@@ -45,16 +45,31 @@
 
   .combo-badge {
     position: absolute;
-    top: 2px;
+    top: 4px;
     left: 50%;
     transform: translateX(-50%);
-    color: #FF2D2D;
-    font-size: 18px;
-    font-weight: 900;
-    text-shadow: 0 2px 0 #FFD700, 0 -2px 0 #FFD700, 2px 0 0 #FFD700, -2px 0 0 #FFD700;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    background: linear-gradient(180deg, rgba(10,12,24,0.92), rgba(28,30,50,0.92));
+    border: 1.5px solid rgba(255,255,255,0.32);
+    border-radius: 20px;
+    padding: 2px 13px 3px 13px;
+    color: #FFFFFF;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.55);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
     z-index: 60;
     white-space: nowrap;
-    animation: comboPulse 0.5s ease-out;
+    animation: comboPulse 0.4s ease-out;
+  }
+  .combo-badge .combo-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #FF5A5A;
+    letter-spacing: 0;
   }
   @keyframes comboPulse {
     0% { transform: translateX(-50%) scale(1.6); }
@@ -96,6 +111,16 @@
     z-index: 10;
   }
   .bubble.show { opacity: 1; }
+  .bubble.hide-bubble { opacity: 0 !important; }
+  .bubble.love {
+    background: linear-gradient(180deg, #FFE4EF, #FFC2D5);
+    border: 1.5px solid #FF8FAB;
+    color: #C2185B;
+    font-size: 15px;
+    font-weight: 800;
+    box-shadow: 0 3px 12px rgba(255,105,150,0.35);
+  }
+  .bubble.love::after { border-bottom-color: #FFC2D5; }
   .bubble::after {
     content: '';
     position: absolute;
@@ -160,7 +185,7 @@
   }
   .sleep-whale, .charge-whale {
     display: none;
-    width: 60px;
+    width: 56px;
     height: auto;
     transform-origin: center bottom;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
@@ -173,6 +198,8 @@
     display: block;
     animation: chargeFloat 1.6s ease-in-out infinite;
   }
+  /* 充电鱼保持原尺寸（用户喜欢充电鱼大小） */
+  .charge-whale { width: 60px; }
   @keyframes sleepBreath {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(0.96); }
@@ -533,13 +560,13 @@
     // 连续戳5次 -> 沮丧鱼干 + 去右下角画圈
     countTap() {
       const now = Date.now();
-      if (now - this.lastTapTime < 2000) this.tapStreak++;
+      if (cornerMode || now - this.lastTapTime < 2000) this.tapStreak++;
       else this.tapStreak = 1;
       this.lastTapTime = now;
       // 每次戳：连击数显示在气泡上方
       const badge = document.getElementById('comboBadge');
       if (badge) {
-        badge.textContent = this.tapStreak + '连击';
+        badge.innerHTML = this.tapStreak + '<span class=\'combo-tag\'>连击</span>';
         badge.style.display = 'block';
         badge.style.animation = 'none';
         void badge.offsetWidth;
@@ -565,7 +592,7 @@
         clearTimeout(this.comboHideTimer);
         const badge = document.getElementById('comboBadge');
         if (badge) {
-          badge.textContent = this.tapStreak + '连击';
+          badge.innerHTML = this.tapStreak + '<span class=\'combo-tag\'>连击</span>';
           badge.style.display = 'block';
           badge.style.animation = 'none';
           void badge.offsetWidth;
@@ -580,7 +607,7 @@
         clearTimeout(this.comboHideTimer);
         const badge = document.getElementById('comboBadge');
         if (badge) {
-          badge.textContent = this.tapStreak + '连击';
+          badge.innerHTML = this.tapStreak + '<span class=\'combo-tag\'>连击</span>';
           badge.style.animation = 'none';
           void badge.offsetWidth;
           badge.style.animation = '';
@@ -596,8 +623,7 @@
       this.markInteract();
       if (this.state === 'sleep') { this.wake(); return; }
       if (cornerMode) {
-        this.showBubble(cornerWords[Math.floor(Math.random() * cornerWords.length)], 1200);
-        startCornerTimer();
+        this.countTap();
         return;
       }
       this.showBubble('服务器繁忙，请稍后再试~', 1800);
@@ -673,6 +699,8 @@
   function runAway() {
     if (petEngine._runaway) return;
     petEngine._runaway = true;
+    const bubbleEl = document.getElementById('bubble');
+    if (bubbleEl) bubbleEl.classList.add('hide-bubble');
     const wb = document.getElementById('whale');
     if (wb) wb.classList.add('float');
     let phase = 0;
@@ -686,6 +714,8 @@
     function runPhase() {
       if (phase >= phases.length) {
         if (wb) { wb.classList.remove('float'); wb.classList.remove('face-left', 'face-right'); }
+        const bEl = document.getElementById('bubble');
+        if (bEl) bEl.classList.remove('hide-bubble');
         petEngine._runaway = false;
         return;
       }
@@ -855,6 +885,15 @@
         appendChat('ai', cmd.text);
       } else {
         petEngine.showBubble(cmd.text, cmd.duration || 3000);
+        if (cmd.text && cmd.text.indexOf('❤️') >= 0) {
+          const bl = document.getElementById('bubble');
+          if (bl) bl.classList.add('love');
+          clearTimeout(petEngine._loveTimer);
+          petEngine._loveTimer = setTimeout(function () {
+            const bl2 = document.getElementById('bubble');
+            if (bl2) bl2.classList.remove('love');
+          }, (cmd.duration || 3000) + 200);
+        }
       }
     }
     if (cmd.mood === 'sad') {
