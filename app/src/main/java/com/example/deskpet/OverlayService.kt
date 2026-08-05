@@ -98,7 +98,8 @@ class OverlayService : Service() {
             pkg.contains("youku") || pkg.contains("mgtv") || pkg.contains("hunantv") ||
             pkg.contains("kiwi") || pkg.contains("gifmaker") || pkg.contains("aweme") ||
             pkg.contains("kuaishou") || pkg.contains("douyu") || pkg.contains("huya") ||
-            pkg.contains("bilibili") || pkg.contains("iqiyi") || pkg.contains("acfun")) return true
+            pkg.contains("bilibili") || pkg.contains("iqiyi") || pkg.contains("acfun") ||
+            pkg.contains("xhs") || pkg.contains("weibo") || pkg.contains("zhihu")) return true
         return false
     }
     private fun setPetAlpha(a: Float) {
