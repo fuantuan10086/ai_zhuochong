@@ -334,43 +334,71 @@
 
   /* ===== 变脏效果 ===== */
   .dirty .whale-body {
-    filter: sepia(0.45) brightness(0.82) saturate(0.75);
+    filter: sepia(0.55) saturate(0.45) brightness(0.72) hue-rotate(-18deg);
+    animation: dirtyShiver 0.9s ease-in-out infinite;
   }
+  @keyframes dirtyShiver {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px) rotate(-1deg); }
+    75% { transform: translateX(2px) rotate(1deg); }
+  }
+
   /* ===== 陪玩模式（游戏/追番） ===== */
   .game-mode .whale-body {
     width: 44px;
     animation: gameBob 2s ease-in-out infinite;
   }
   .game-mode .bubble { display: none; }
+  .state-tag {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 17px;
+    z-index: 64;
+    display: none;
+    animation: stateFloat 1.2s ease-in-out infinite;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  .dirty .state-tag, .hungry .state-tag { display: block; }
+  @keyframes stateFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+  }
   @keyframes gameBob {
     0%, 100% { transform: translateY(0) rotate(-4deg); }
     50% { transform: translateY(3px) rotate(4deg); }
   }
   .game-toy {
     position: absolute;
-    top: 8px;
-    right: 6px;
+    top: 45%;
+    left: 50%;
     font-size: 20px;
     display: none;
     z-index: 65;
-    animation: toySwing 1.4s ease-in-out infinite;
+    pointer-events: none;
   }
-  .game-mode .game-toy { display: block; }
-  @keyframes toySwing {
-    0%, 100% { transform: rotate(-12deg); }
-    50% { transform: rotate(12deg); }
+  .game-mode .game-toy {
+    display: block;
+    animation: orbitToy 2.6s linear infinite;
+  }
+  @keyframes orbitToy {
+    0% { transform: translate(-50%, -50%) rotate(0deg) translateX(40px) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg) translateX(40px) rotate(-360deg); }
   }
   /* 隐身模式 */
   .ghost-mode .whale-body { filter: opacity(0.55) drop-shadow(0 0 6px rgba(120,140,255,0.6)); }
   .ghost-mode .bubble { display: none; }
   /* ===== 饿晕效果（饱腹低） ===== */
   .hungry .whale-body {
-    animation: hungrySway 1.6s ease-in-out infinite;
-    filter: saturate(0.6) brightness(0.92) hue-rotate(12deg);
+    animation: hungryDrop 1.2s ease-in-out infinite;
+    filter: saturate(0.5) brightness(0.95) hue-rotate(60deg);
+    transform: scale(0.82);
   }
-  @keyframes hungrySway {
-    0%, 100% { transform: translateY(0) rotate(-3deg); }
-    50% { transform: translateY(4px) rotate(3deg); }
+  @keyframes hungryDrop {
+    0%, 100% { transform: scale(0.82) rotate(-6deg) translateY(0); }
+    50% { transform: scale(0.78) rotate(6deg) translateY(5px); }
   }
 
   /* ===== 聊天小窗 ===== */
@@ -525,6 +553,7 @@
 </div>
 <div id="bath-emoji">🛁</div>
 <div class="game-toy" id="gameToy">🎮</div>
+<div class="state-tag" id="stateTag"></div>
 
 <div id="pet-menu">
   <div class="menu-btn m0" onclick="menuAction('feed')">🍚</div>
@@ -1194,6 +1223,13 @@
     // 饱腹低 -> 饿晕发蔫
     if (petStats.hunger <= 2) petEngine.bodyEl.classList.add('hungry');
     else petEngine.bodyEl.classList.remove('hungry');
+    // 状态标签内容
+    const tag = document.getElementById('stateTag');
+    if (tag) {
+      if (petStats.hunger <= 2 && petStats.cleanliness <= 3) tag.textContent = '🥀';
+      else if (petStats.hunger <= 2) tag.textContent = '🍽️';
+      else if (petStats.cleanliness <= 3) tag.textContent = '💨';
+    }
   }
 
   connectRealtime();
