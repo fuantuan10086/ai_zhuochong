@@ -520,6 +520,8 @@ class OverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    // 隐身模式：不能移动，只能长按
+                    if (ghostMode) return@OnTouchListener true
                     val dx = (event.rawX - initialTouchX).toInt()
                     val dy = (event.rawY - initialTouchY).toInt()
                     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
@@ -538,6 +540,11 @@ class OverlayService : Service() {
                 }
                 MotionEvent.ACTION_UP -> {
                     val elapsed = System.currentTimeMillis() - touchStartTime
+                    // 隐身模式：只认长按（弹菜单显形），单击/双击全部忽略
+                    if (ghostMode) {
+                        if (!hasMoved && elapsed > 600) onLongPress()
+                        return@OnTouchListener true
+                    }
                     if (hasMoved) {
                         overlayView?.evaluateJavascript(
                             "window.petEngine && window.petEngine.setDragging(false)", null
