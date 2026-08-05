@@ -88,6 +88,24 @@ class OverlayService : Service() {
         "com.coloros.filemanager" to "文件管理"
     )
 
+    private var ghostMode = false
+    private var entertainmentMode = false
+    // 游戏/追番类App（自动进入半透明陪玩模式）
+    private fun isEntertainment(pkg: String): Boolean {
+        if (pkg.contains("tmgp") || pkg.contains("mihoyo") || pkg.contains("supercell") ||
+            pkg.contains("kakaogames") || pkg.contains("netease.tm") || pkg.contains("tencent.tmgp")) return true
+        if (pkg.contains("bili") || pkg.contains("qiyi") || pkg.contains("qqlive") ||
+            pkg.contains("youku") || pkg.contains("mgtv") || pkg.contains("hunantv") ||
+            pkg.contains("kiwi") || pkg.contains("gifmaker") || pkg.contains("aweme") ||
+            pkg.contains("kuaishou") || pkg.contains("douyu") || pkg.contains("huya") ||
+            pkg.contains("bilibili") || pkg.contains("iqiyi") || pkg.contains("acfun")) return true
+        return false
+    }
+    private fun setPetAlpha(a: Float) {
+        uiHandler.post {
+            try { params?.alpha = a; windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+        }
+    }
     private fun startAppWatcher() {
         val handler = Handler(Looper.getMainLooper())
         handler.postDelayed(object : Runnable {
@@ -96,6 +114,23 @@ class OverlayService : Service() {
                     val current = getForegroundPackage()
                     if (current != null && current != lastForegroundApp &&
                         !current.startsWith("com.example.deskpet")) {
+                        val wasEntertainment = entertainmentMode
+                        entertainmentMode = isEntertainment(current)
+                        if (entertainmentMode != wasEntertainment) {
+                            if (entertainmentMode) {
+                                // 游戏/追番：自动半透明+陪玩模式（不妨碍）
+                                if (!ghostMode) setPetAlpha(0.45f)
+                                overlayView?.evaluateJavascript(
+                                    "window.petEngine && window.petEngine.onEntertainment(true)", null
+                                )
+                            } else {
+                                // 退出娱乐：恢复（隐身模式则保持隐身）
+                                if (!ghostMode) setPetAlpha(1.0f)
+                                overlayView?.evaluateJavascript(
+                                    "window.petEngine && window.petEngine.onEntertainment(false)", null
+                                )
+                            }
+                        }
                         lastForegroundApp = current
                         val name = appNames[current] ?: "别的App"
                         overlayView?.evaluateJavascript(
@@ -364,6 +399,17 @@ class OverlayService : Service() {
                 params?.x = 50
                 params?.y = 300
                 try { windowManager?.updateViewLayout(overlayView, params) } catch (e: Exception) {}
+            }
+        }
+        // 手动隐身模式切换（菜单👻按钮）
+        @android.webkit.JavascriptInterface
+        fun toggleGhost() {
+            uiHandler.post {
+                ghostMode = !ghostMode
+                setPetAlpha(if (ghostMode) 0.22f else 1.0f)
+                overlayView?.evaluateJavascript(
+                    "window.petEngine && window.petEngine.onGhost(" + ghostMode + ")", null
+                )
             }
         }
         // 聊天窗右下角拖拽缩放（必须回UI线程）

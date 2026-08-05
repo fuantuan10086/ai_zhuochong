@@ -295,6 +295,7 @@
   .menu-btn.m2 { top: 98px; left: 84px; }
   .menu-btn.m3 { top: 98px; left: 6px; }
   .menu-btn.m4 { top: 38px; left: 2px; }
+  .menu-btn.m5 { top: 54px; left: 40px; transition-delay: 0.32s; }
   .menu-btn:active { transform: scale(0.85); }
 
   /* ===== 聊天输入框 ===== */
@@ -335,6 +336,33 @@
   .dirty .whale-body {
     filter: sepia(0.45) brightness(0.82) saturate(0.75);
   }
+  /* ===== 陪玩模式（游戏/追番） ===== */
+  .game-mode .whale-body {
+    width: 44px;
+    animation: gameBob 2s ease-in-out infinite;
+  }
+  .game-mode .bubble { display: none; }
+  @keyframes gameBob {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(3px) rotate(4deg); }
+  }
+  .game-toy {
+    position: absolute;
+    top: 8px;
+    right: 6px;
+    font-size: 20px;
+    display: none;
+    z-index: 65;
+    animation: toySwing 1.4s ease-in-out infinite;
+  }
+  .game-mode .game-toy { display: block; }
+  @keyframes toySwing {
+    0%, 100% { transform: rotate(-12deg); }
+    50% { transform: rotate(12deg); }
+  }
+  /* 隐身模式 */
+  .ghost-mode .whale-body { filter: opacity(0.55) drop-shadow(0 0 6px rgba(120,140,255,0.6)); }
+  .ghost-mode .bubble { display: none; }
   /* ===== 饿晕效果（饱腹低） ===== */
   .hungry .whale-body {
     animation: hungrySway 1.6s ease-in-out infinite;
@@ -480,17 +508,43 @@
   <div id="resize-handle">↘</div>
 </div>
 <div id="bath-emoji">🛁</div>
+<div class="game-toy" id="gameToy">🎮</div>
 <div id="pet-menu">
   <div class="menu-btn m0" onclick="menuAction('feed')">🍚</div>
   <div class="menu-btn m1" onclick="menuAction('bath')">🛁</div>
   <div class="menu-btn m2" onclick="menuAction('chat')">💬</div>
   <div class="menu-btn m3" onclick="menuAction('affection')">❤️</div>
   <div class="menu-btn m4" onclick="menuAction('link')">🔗</div>
+  <div class="menu-btn m5" onclick="menuAction('ghost')">👻</div>
 </div>
 <div id="chat-box"><input id="chat-input" placeholder="和我说点啥~" maxlength="40"></div>
 </div>
 
 <script>
+  // ===== 陪玩模式 / 隐身模式 =====
+  let entMode = false;
+  window.petEngine.onEntertainment = function (active) {
+    entMode = active;
+    const box = document.getElementById('pet-container') || document.body;
+    if (active) {
+      box.classList.add('game-mode');
+      document.getElementById('gameToy').textContent = '🎮';
+      // 陪玩不打扰：不搭话、不随机动作
+      petEngine.showBubble('陪你打游戏~我安静点', 1200);
+    } else {
+      box.classList.remove('game-mode');
+    }
+  };
+  window.petEngine.onGhost = function (on) {
+    const box = document.getElementById('pet-container') || document.body;
+    if (on) {
+      box.classList.add('ghost-mode');
+      petEngine.showBubble('隐身中~你看不见我👻', 1200);
+    } else {
+      box.classList.remove('ghost-mode');
+      petEngine.showBubble('我出来啦！', 1200);
+    }
+  };
   const petEngine = window.petEngine = {
     state: 'normal',
     bubbleEl: document.getElementById('bubble'),
@@ -981,6 +1035,9 @@
     } else if (action === 'link') {
       try { if (window.AndroidBridge) AndroidBridge.openLink(); }
       catch (e) { petEngine.showBubble('去找DeepSeek玩啦~', 1500); }
+    } else if (action === 'ghost') {
+      try { if (window.AndroidBridge) AndroidBridge.toggleGhost(); }
+      catch (e) { petEngine.showBubble('隐身失败！', 1000); }
     }
   }
 
