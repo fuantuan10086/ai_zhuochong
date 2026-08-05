@@ -338,10 +338,17 @@
   }
   /* ===== 陪玩模式（游戏/追番） ===== */
   .game-mode .whale-body {
-    width: 44px;
-    animation: gameBob 2s ease-in-out infinite;
+    display: none;
   }
   .game-mode .bubble { display: none; }
+  #gameWhale {
+    display: none;
+    width: 56px;
+    height: auto;
+    animation: gameBob 2s ease-in-out infinite;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+  }
+  .game-mode #gameWhale { display: block; }
   @keyframes gameBob {
     0%, 100% { transform: translateY(0) rotate(-4deg); }
     50% { transform: translateY(3px) rotate(4deg); }
@@ -509,6 +516,22 @@
 </div>
 <div id="bath-emoji">🛁</div>
 <div class="game-toy" id="gameToy">🎮</div>
+<svg id="gameWhale" viewBox="0 0 120 92" xmlns="http://www.w3.org/2000/svg">
+  <path d="M96 40 Q116 28 110 50 Q118 56 96 56 Z" fill="#3D7BFF"/>
+  <ellipse cx="58" cy="50" rx="46" ry="30" fill="#4D8DFF"/>
+  <ellipse cx="58" cy="58" rx="32" ry="17" fill="#EAF2FF"/>
+  <path d="M34 60 Q22 70 38 76 Q44 68 42 58 Z" fill="#3D7BFF"/>
+  <circle cx="40" cy="42" r="7.5" fill="#16294d"/>
+  <circle cx="42.5" cy="39.5" r="3" fill="#fff"/>
+  <circle cx="29" cy="52" r="5" fill="#FFB3C7" opacity="0.85"/>
+  <path d="M36 55 Q46 63 58 56" stroke="#16294d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M28 40 Q58 16 92 40" stroke="#FF7A3D" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <rect x="19" y="36" width="15" height="19" rx="7.5" fill="#FF7A3D"/>
+  <rect x="86" y="36" width="15" height="19" rx="7.5" fill="#FF7A3D"/>
+  <rect x="46" y="64" width="26" height="13" rx="6.5" fill="#3DD68C" stroke="#2BB573" stroke-width="1.5"/>
+  <circle cx="52" cy="70.5" r="2.2" fill="#fff"/>
+  <circle cx="66" cy="70.5" r="2.2" fill="#fff"/>
+</svg>
 <div id="pet-menu">
   <div class="menu-btn m0" onclick="menuAction('feed')">🍚</div>
   <div class="menu-btn m1" onclick="menuAction('bath')">🛁</div>
@@ -521,30 +544,6 @@
 </div>
 
 <script>
-  // ===== 陪玩模式 / 隐身模式 =====
-  let entMode = false;
-  window.petEngine.onEntertainment = function (active) {
-    entMode = active;
-    const box = document.getElementById('pet-container') || document.body;
-    if (active) {
-      box.classList.add('game-mode');
-      document.getElementById('gameToy').textContent = '🎮';
-      // 陪玩不打扰：不搭话、不随机动作
-      petEngine.showBubble('陪你打游戏~我安静点', 1200);
-    } else {
-      box.classList.remove('game-mode');
-    }
-  };
-  window.petEngine.onGhost = function (on) {
-    const box = document.getElementById('pet-container') || document.body;
-    if (on) {
-      box.classList.add('ghost-mode');
-      petEngine.showBubble('隐身中~你看不见我👻', 1200);
-    } else {
-      box.classList.remove('ghost-mode');
-      petEngine.showBubble('我出来啦！', 1200);
-    }
-  };
   const petEngine = window.petEngine = {
     state: 'normal',
     bubbleEl: document.getElementById('bubble'),
@@ -771,6 +770,29 @@
       this.setState('happy');
       this.showBubble('嘿~ 我又活了', 1500);
       setTimeout(() => this.setState('normal'), 2000);
+    }
+  };
+  // ===== 陪玩模式 / 隐身模式 =====
+  let entMode = false;
+  window.petEngine.onEntertainment = function (active) {
+    entMode = active;
+    const box = document.getElementById('pet-container') || document.body;
+    if (active) {
+      box.classList.add('game-mode');
+      document.getElementById('gameToy').textContent = '🎮';
+      this.showBubble('陪你打游戏~我安静点', 1200);
+    } else {
+      box.classList.remove('game-mode');
+    }
+  };
+  window.petEngine.onGhost = function (on) {
+    const box = document.getElementById('pet-container') || document.body;
+    if (on) {
+      box.classList.add('ghost-mode');
+      this.showBubble('隐身中~你看不见我👻', 1200);
+    } else {
+      box.classList.remove('ghost-mode');
+      this.showBubble('我出来啦！', 1200);
     }
   };
 
