@@ -832,16 +832,25 @@
     if (bubbleEl) bubbleEl.classList.add('hide-bubble');
     const wb = document.getElementById('whale');
     if (wb) wb.classList.add('float');
+    // 超时保险：4秒强制复位（防止状态卡死导致以后双击都不跑）
+    clearTimeout(petEngine._runawayTimer);
+    petEngine._runawayTimer = setTimeout(function () {
+      petEngine._runaway = false;
+      if (wb) { wb.classList.remove('float'); wb.classList.remove('face-left', 'face-right'); }
+      const bEl = document.getElementById('bubble');
+      if (bEl) bEl.classList.remove('hide-bubble');
+    }, 4000);
     let phase = 0;
     const phases = [
+      { dir: 1, steps: 6 },
+      { dir: -1, steps: 6 },
       { dir: 1, steps: 5 },
       { dir: -1, steps: 5 },
-      { dir: 1, steps: 4 },
-      { dir: -1, steps: 4 },
-      { dir: 1, steps: 6 }
+      { dir: 1, steps: 7 }
     ];
     function runPhase() {
       if (phase >= phases.length) {
+        clearTimeout(petEngine._runawayTimer);
         if (wb) { wb.classList.remove('float'); wb.classList.remove('face-left', 'face-right'); }
         const bEl = document.getElementById('bubble');
         if (bEl) bEl.classList.remove('hide-bubble');
@@ -853,18 +862,18 @@
         wb.classList.remove('face-left', 'face-right');
         wb.classList.add(p.dir > 0 ? 'face-right' : 'face-left');
       }
-      const stepX = 46 * p.dir;
+      const stepX = 58 * p.dir;
       let n = 0;
       const iv = setInterval(function () {
         n++;
         if (n > p.steps) {
           clearInterval(iv);
           phase++;
-          setTimeout(runPhase, 220);
+          setTimeout(runPhase, 110);
           return;
         }
         try { if (window.AndroidBridge) AndroidBridge.moveStep(stepX, 0); } catch (e) {}
-      }, 90);
+      }, 55);
     }
     runPhase();
   }
