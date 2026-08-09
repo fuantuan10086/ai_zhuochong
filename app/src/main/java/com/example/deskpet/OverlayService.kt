@@ -215,6 +215,7 @@ class OverlayService : Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
     private var lastTapTime = 0L
+    private var lastDoubleTapTime = 0L
     private var touchStartTime = 0L
     private var hasMoved = false
     private var draggingNotified = false
@@ -553,7 +554,11 @@ class OverlayService : Service() {
                     if (!hasMoved) {
                         when {
                             elapsed > 600 -> onLongPress()
-                            System.currentTimeMillis() - lastTapTime < 150 -> onDoubleTap()
+                            System.currentTimeMillis() - lastTapTime < 150 && System.currentTimeMillis() - lastDoubleTapTime > 600 -> {
+                                lastTapTime = System.currentTimeMillis()
+                                lastDoubleTapTime = System.currentTimeMillis()
+                                onDoubleTap()
+                            }
                             else -> {
                                 lastTapTime = System.currentTimeMillis()
                                 onTap()

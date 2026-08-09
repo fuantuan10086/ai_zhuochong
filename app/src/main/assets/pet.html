@@ -830,6 +830,8 @@
     petEngine._runaway = true;
     const bubbleEl = document.getElementById('bubble');
     if (bubbleEl) bubbleEl.classList.add('hide-bubble');
+    const cbEl = document.getElementById('comboBadge');
+    if (cbEl) cbEl.style.display = 'none';
     const wb = document.getElementById('whale');
     if (wb) wb.classList.add('float');
     // 超时保险：4秒强制复位（防止状态卡死导致以后双击都不跑）
@@ -839,14 +841,16 @@
       if (wb) { wb.classList.remove('float'); wb.classList.remove('face-left', 'face-right'); }
       const bEl = document.getElementById('bubble');
       if (bEl) bEl.classList.remove('hide-bubble');
+      const cbEl3 = document.getElementById('comboBadge');
+      if (cbEl3 && petEngine.tapStreak > 0) cbEl3.style.display = 'block';
     }, 4000);
     let phase = 0;
     const phases = [
-      { dir: 1, steps: 6 },
-      { dir: -1, steps: 6 },
       { dir: 1, steps: 5 },
       { dir: -1, steps: 5 },
-      { dir: 1, steps: 7 }
+      { dir: 1, steps: 4 },
+      { dir: -1, steps: 4 },
+      { dir: 1, steps: 6 }
     ];
     function runPhase() {
       if (phase >= phases.length) {
@@ -854,6 +858,8 @@
         if (wb) { wb.classList.remove('float'); wb.classList.remove('face-left', 'face-right'); }
         const bEl = document.getElementById('bubble');
         if (bEl) bEl.classList.remove('hide-bubble');
+        const cbEl2 = document.getElementById('comboBadge');
+        if (cbEl2 && petEngine.tapStreak > 0) cbEl2.style.display = 'block';
         petEngine._runaway = false;
         return;
       }
@@ -862,7 +868,7 @@
         wb.classList.remove('face-left', 'face-right');
         wb.classList.add(p.dir > 0 ? 'face-right' : 'face-left');
       }
-      const stepX = 58 * p.dir;
+      const stepX = 52 * p.dir;
       let n = 0;
       const iv = setInterval(function () {
         n++;
@@ -873,7 +879,7 @@
           return;
         }
         try { if (window.AndroidBridge) AndroidBridge.moveStep(stepX, 0); } catch (e) {}
-      }, 55);
+      }, 70);
     }
     runPhase();
   }
