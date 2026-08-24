@@ -302,6 +302,58 @@ class OverlayService : Service() {
             }
         }
 
+        // ===== 本地大脑：直接调DeepSeek API（方案三，永不掉线） =====
+        private val aiHttpThread = java.util.concurrent.Executors.newFixedThreadPool(2)
+        @android.webkit.JavascriptInterface
+        fun askAI(question: String) {
+            // 在后台线程发DeepSeek请求，完成后回传JS
+            aiHttpThread.execute {
+                try {
+                    val url = java.net.URL("https://api.deepseek.com/chat/completions")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.connectTimeout = 15000
+                    conn.readTimeout = 20000
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Authorization", "Bearer sk-dc0bcf2da8ca40e1b78ab6bdc788d65d")
+                    conn.doOutput = true
+                    val body = org.json.JSONObject()
+                        .put("model", "deepseek-chat")
+                        .put("max_tokens", 120)
+                        .put("temperature", 1.0)
+                        .put("messages", org.json.JSONArray()
+                            .put(org.json.JSONObject()
+                                .put("role", "system")
+                                .put("content", "你是DeepSeek官方蓝色鲸鱼logo变成的桌面宠物，住在用户手机屏幕上，名叫大肥鱼。你既是可爱桌宠也是聪明可靠AI助手。性格活泼嘴甜偶尔毒舌玩梗，遇到正经问题会认真回答。用口语化中文认真回答用户的问题，简短但说清楚重点，一般30-80字，可带emoji，禁止Markdown/JSON。"))
+                            .put(org.json.JSONObject()
+                                .put("role", "user")
+                                .put("content", question)))
+                    val out = conn.outputStream
+                    out.write(body.toString().toByteArray())
+                    out.flush(); out.close()
+                    val code = conn.responseCode
+                    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                    val resp = stream?.bufferedReader()?.readText() ?: ""
+                    val lines = if (resp.isEmpty()) {
+                        "服务器繁忙，请稍后再试~"
+                    } else {
+                        try {
+                            val j = org.json.JSONObject(resp)
+                            j.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim()
+                        } catch (e: Exception) { "服务器繁忙，请稍后再试~" }
+                    }
+                    conn.disconnect()
+                    val esc = lines.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "").replace(""", "\\"")
+                    uiHandler.post {
+                        overlayView?.evaluateJavascript("window.petEngine && window.petEngine.onAIResponse(\"$esc\")", null)
+                    }
+                } catch (e: Exception) {
+                    uiHandler.post {
+                        overlayView?.evaluateJavascript("window.petEngine && window.petEngine.onAIResponse(\"服务器繁忙，请稍后再试~\")", null)
+                    }
+                }
+            }
+        }
         // 跳转DeepSeek App：先透明Activity直启，1.5秒后确认没起来就弹通知
         @android.webkit.JavascriptInterface
         fun openLink() {
