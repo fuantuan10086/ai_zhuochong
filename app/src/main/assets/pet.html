@@ -945,11 +945,10 @@
     }
     const wd = document.getElementById('watchDolphin');
     const wb = document.getElementById('whale');
-    if (wd && wb) {
-      wb.style.display = 'none';
-      wd.style.display = 'block';
-    }
+    // 先隐藏本体鲸鱼（setState会碰海豚，所以顺序：先setState再显示海豚）
+    if (wb) wb.style.display = 'none';
     petEngine.setState('happy');
+    if (wd) wd.style.display = 'block';
     petEngine.showBubble('你去' + appName + '啦~ 我趴着看你！', 1800);
     setTimeout(function () {
       if (wd && wb) { wd.style.display = 'none'; wb.style.display = ''; }
