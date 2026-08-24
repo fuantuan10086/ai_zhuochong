@@ -617,6 +617,10 @@
     },
 
     setState(state) {
+      // 切换形象时撤掉趴着海豚（防两条鱼重叠）
+      const _wd = document.getElementById('watchDolphin');
+      const _wb = document.getElementById('whale');
+      if (_wd && _wb) { _wd.style.display = 'none'; _wb.style.display = 'block'; }
       // 角落模式：只保持沮丧鲸鱼
       if (cornerMode && state !== 'sad') return;
       // 充电中不睡觉
@@ -1038,6 +1042,10 @@
     }
     else if (type === 'queryAffection') {
       petEngine.showBubble('❤️ 好感度 ' + L.affection + '\n🍚 饱腹度 ' + L.hunger + '/10\n🧼 清洁度 ' + L.cleanliness + '/10', 4000);
+      const _bl = document.getElementById('bubble');
+      if (_bl) { _bl.classList.add('love'); }
+      clearTimeout(petEngine._loveTimer);
+      petEngine._loveTimer = setTimeout(function () { _bl.classList.remove('love'); }, 4500);
       return;
     }
     else if (type === 'chat') {
