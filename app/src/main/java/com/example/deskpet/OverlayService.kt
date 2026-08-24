@@ -334,7 +334,7 @@ class OverlayService : Service() {
                     val code = conn.responseCode
                     val stream = if (code in 200..299) conn.inputStream else conn.errorStream
                     val resp = stream?.bufferedReader()?.readText() ?: ""
-                    val lines = if (resp.isEmpty()) {
+                    val text = if (resp.isEmpty()) {
                         "服务器繁忙，请稍后再试~"
                     } else {
                         try {
@@ -343,9 +343,10 @@ class OverlayService : Service() {
                         } catch (e: Exception) { "服务器繁忙，请稍后再试~" }
                     }
                     conn.disconnect()
-                    val esc = lines.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "").replace(""", "\\"")
+                    // JSON安全转义：生成合法的JS字符串字面量（自动处理引号/换行/反斜杠）
+                    val safeJs = org.json.JSONObject.quote(text)
                     uiHandler.post {
-                        overlayView?.evaluateJavascript("window.petEngine && window.petEngine.onAIResponse(\"$esc\")", null)
+                        overlayView?.evaluateJavascript("window.petEngine && window.petEngine.onAIResponse(" + safeJs + ")", null)
                     }
                 } catch (e: Exception) {
                     uiHandler.post {
@@ -354,7 +355,7 @@ class OverlayService : Service() {
                 }
             }
         }
-        // 跳转DeepSeek App：先透明Activity直启，1.5秒后确认没起来就弹通知
+// 跳转DeepSeek App：先透明Activity直启，1.5秒后确认没起来就弹通知
         @android.webkit.JavascriptInterface
         fun openLink() {
             uiHandler.post {
