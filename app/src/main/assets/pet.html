@@ -35,7 +35,7 @@
   }
 
   .watch-dolphin {
-    width: 92px;
+    width: 100px;
     height: auto;
     display: none;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18));
@@ -620,7 +620,7 @@
       // 切换形象时撤掉趴着海豚（防两条鱼重叠）
       const _wd = document.getElementById('watchDolphin');
       const _wb = document.getElementById('whale');
-      if (_wd && _wb) { _wd.style.display = 'none'; _wb.style.display = 'block'; }
+      if (_wd && _wb) { _wd.style.display = 'none'; _wb.style.display = ''; }
       // 角落模式：只保持沮丧鲸鱼
       if (cornerMode && state !== 'sad') return;
       // 充电中不睡觉
@@ -815,12 +815,19 @@
   window.petEngine.onEntertainment = function (active) {
     entMode = active;
     const box = document.getElementById('pet-container') || document.body;
+    const _wd2 = document.getElementById('watchDolphin');
+    const _wb2 = document.getElementById('whale');
     if (active) {
       box.classList.add('game-mode');
       document.getElementById('gameToy').textContent = '🎮';
+      // 游戏模式：撤掉趴着鲸鱼（海豚），恢复CSS控制
+      if (_wd2) _wd2.style.display = 'none';
+      if (_wb2) _wb2.style.display = '';
       this.showBubble('陪你打游戏~我安静点', 1200);
     } else {
       box.classList.remove('game-mode');
+      if (_wd2) _wd2.style.display = 'none';
+      if (_wb2) _wb2.style.display = '';
     }
   };
   window.petEngine.onGhost = function (on) {
@@ -945,7 +952,7 @@
     petEngine.setState('happy');
     petEngine.showBubble('你去' + appName + '啦~ 我趴着看你！', 1800);
     setTimeout(function () {
-      if (wd && wb) { wd.style.display = 'none'; wb.style.display = 'block'; }
+      if (wd && wb) { wd.style.display = 'none'; wb.style.display = ''; }
     }, 15000);
   };
 
@@ -972,7 +979,7 @@
   // 60秒没动静 -> 睡觉
   
 
-  // ===== SUPABASE REALTIME (AI SOUL LINK) =====
+  // ===== 本地灵魂引擎（原Supabase已移除） =====
   // 养成状态（本地大脑/旧接口共用）
   let petStats = { affection: 0, cleanliness: 10, hunger: 8 };
   // ===== 本地大脑引擎 v26（方案三：不依赖服务器，永不掉线） =====
