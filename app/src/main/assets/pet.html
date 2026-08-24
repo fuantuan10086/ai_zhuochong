@@ -811,20 +811,12 @@
   window.petEngine.onEntertainment = function (active) {
     entMode = active;
     const box = document.getElementById('pet-container') || document.body;
-    const wd = document.getElementById('watchDolphin');
-    const wb = document.getElementById('whale');
     if (active) {
       box.classList.add('game-mode');
       document.getElementById('gameToy').textContent = '🎮';
-      // 游戏模式：撤掉趴着海豚，回到正常鲸鱼(半透明由Kotlin控制)
-      if (wd) wd.style.display = 'none';
-      if (wb) wb.style.display = 'block';
       this.showBubble('陪你打游戏~我安静点', 1200);
     } else {
       box.classList.remove('game-mode');
-      // 退出游戏：恢复鲸鱼，撤掉海豚
-      if (wd) wd.style.display = 'none';
-      if (wb) wb.style.display = 'block';
     }
   };
   window.petEngine.onGhost = function (on) {
@@ -940,7 +932,6 @@
       startCornerTimer();
       return;
     }
-    // 切到别的App：趴着陪看（海豚趴着看用户用APP），只有游戏/追番才隐身
     const wd = document.getElementById('watchDolphin');
     const wb = document.getElementById('whale');
     if (wd && wb) {
@@ -977,7 +968,8 @@
   // 60秒没动静 -> 睡觉
   
 
-  // 养成状态（本地大脑用，旧兼容接口也引用）
+  // ===== SUPABASE REALTIME (AI SOUL LINK) =====
+  // 养成状态（本地大脑/旧接口共用）
   let petStats = { affection: 0, cleanliness: 10, hunger: 8 };
   // ===== 本地大脑引擎 v26（方案三：不依赖服务器，永不掉线） =====
   const LOCAL_KEY = 'pet_brain_v26';
@@ -992,7 +984,7 @@
   function saveLocalState() {
     try { localStorage.setItem(LOCAL_KEY, JSON.stringify(L)); } catch (e) {}
   }
-  // ===== 本地台词池（不调API，省钱+快） =====
+  // ===== 本地台词池 =====
   const LINES = {
     tap: [
       { mood: 'happy', text: '服务器繁忙，请稍后再试~', d: 2000 },
@@ -1050,14 +1042,12 @@
     }
     else if (type === 'chat') {
       L.affection += 2; saveLocalState();
-      // 本地大脑：走Kotlin桥直接调DeepSeek API
       try {
         if (window.AndroidBridge) AndroidBridge.askAI(extra || '你好呀~');
-        else appendChat('ai', '（本地大脑未就绪）服务器繁忙，请稍后再试~');
+        else appendChat('ai', '服务器繁忙，请稍后再试~');
       } catch (e) { appendChat('ai', '服务器繁忙，请稍后再试~'); }
       return;
     }
-    // 其他互动：固定台词
     const pool = LINES[type] || LINES.tap;
     const c = pick(pool);
     petEngine.setState(c.mood); petEngine.showBubble(c.text, c.d);
@@ -1074,17 +1064,16 @@
     clearTimeout(petEngine._loveTimer);
     petEngine._loveTimer = setTimeout(function () { bl.classList.remove('love'); }, 3500);
   };
-  // 状态广播（本地存储 + 更新外观/状态标签）
+  // 状态广播（更新petStats + 旧handleAIState驱动外观/状态标签）
   function broadcastLocalState() {
-    petStats.affection = L.affection;
-    petStats.hunger = L.hunger;
-    petStats.cleanliness = L.cleanliness;
-    // 调用旧版handleAIState：直接驱动dirty/hungry外观 + stateTag
     try {
+      petStats.affection = L.affection;
+      petStats.hunger = L.hunger;
+      petStats.cleanliness = L.cleanliness;
       if (typeof handleAIState === 'function') handleAIState(petStats);
     } catch (e) {}
   }
-  // ===== 时间衰减：每30分钟 饱腹-1 清洁-1 =====
+  // ===== 时间衰减 =====
   function localDecay() {
     const now = Date.now();
     const mins = (now - (L.lastDecay || now)) / 60000;
@@ -1098,11 +1087,11 @@
     }
   }
   setInterval(localDecay, 60000);
-  // ===== 本地主动搭话（时间感知+状态感知，不调API） =====
+  // ===== 本地主动搭话 =====
   function scheduleRandom() {
     const delay = (5 + Math.random() * 4) * 60 * 1000;
     setTimeout(function () {
-      const h = new Date().getHours(); // 本地（北京时间）
+      const h = new Date().getHours();
       let t = null;
       if (h >= 6 && h < 9) t = pick(['早上好呀！今天也要元气满满！☀️', '早！吃早饭了没？']);
       else if (h >= 9 && h < 12) t = pick(['上午好！摸鱼时间到~', '今天天气不错，适合发呆']);
@@ -1121,28 +1110,219 @@
     }, delay);
   }
   setTimeout(scheduleRandom, 60000);
-  // 上线打招呼 + 状态初始化
+  // 上线打招呼
   setTimeout(function () {
     petEngine.showBubble('你好呀~ 我是DeepSeek大肥鱼！', 2500);
     broadcastLocalState();
   }, 1200);
-  // 兼容旧接口（无Supabase时广播变空操作）
+  // 兼容接口（不再连接服务器）
+  function connectRealtime() {}
+  function scheduleReconnect() {}
+    function handleAICommand(cmd) {
+    if (!cmd) return;
+    if ((cornerMode || petEngine.chargingActive) && cmd.mood && cmd.mood !== 'sad') {
+      // 角落/充电模式保持状态，不被随机互动打断
+    } else if (cmd.mood) {
+      petEngine.setState(cmd.mood);
+      // AI主动表达时伴随动作
+      if (cmd.mood === 'happy') {
+        petEngine.bodyEl.classList.add('hop');
+        setTimeout(() => petEngine.bodyEl.classList.remove('hop'), 800);
+      } else if (cmd.mood === 'angry') {
+        petEngine.bodyEl.classList.add('shake');
+        setTimeout(() => petEngine.bodyEl.classList.remove('shake'), 500);
+      }
+    }
+    if (cmd.text) {
+      if (cmd.chat && document.getElementById('chat-view').classList.contains('open')) {
+        appendChat('ai', cmd.text);
+      } else {
+        petEngine.showBubble(cmd.text, cmd.duration || 3000);
+        if (cmd.text && cmd.text.indexOf('❤️') >= 0) {
+          const bl = document.getElementById('bubble');
+          if (bl) bl.classList.add('love');
+          clearTimeout(petEngine._loveTimer);
+          petEngine._loveTimer = setTimeout(function () {
+            const bl2 = document.getElementById('bubble');
+            if (bl2) bl2.classList.remove('love');
+          }, (cmd.duration || 3000) + 200);
+        }
+      }
+    }
+    if (cmd.mood === 'sad') {
+      try { if (window.AndroidBridge) AndroidBridge.moveToCorner(); } catch (e) {}
+    }
+    if (cmd.action === 'sleep') petEngine.sleep();
+    if (cmd.action === 'wake') petEngine.wake();
+    if (cmd.mood && cmd.mood !== 'sleep') {
+      clearTimeout(petEngine.moodResetTimer);
+      petEngine.moodResetTimer = setTimeout(function () {
+        petEngine.setState('normal');
+      }, (cmd.duration || 3000) + 1000);
+    }
+  }
+
   function broadcastPetEvent(type, extra) {
+    // V26本地大脑：直接本地处理
     localHandleEvent(type, extra ? extra.text : undefined);
   }
-  // (移除) pendingChats 已废弃
+
+  // ===== 长按环形菜单 =====
+  let menuOpen = false;
+  function showMenu() {
+    document.getElementById('pet-menu').classList.add('open');
+    var b = document.getElementById('petBody');
+    if (b) b.style.display = 'none';
+    menuOpen = true;
+    try { if (window.AndroidBridge) AndroidBridge.notifyMenu(true); } catch (e) {}
+    setTimeout(hideMenu, 6000);
+  }
+  function hideMenu() {
+    document.getElementById('pet-menu').classList.remove('open');
+    var b = document.getElementById('petBody');
+    if (b) b.style.display = '';
+    menuOpen = false;
+    try { if (window.AndroidBridge) AndroidBridge.notifyMenu(false); } catch (e) {}
+  }
+  // 点空白处关闭菜单
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.menu-btn') && !e.target.closest('#chat-view')) hideMenu();
+    if (e.target.closest('.menu-btn') || e.target.closest('#chat-view')) petEngine.markInteract();
+  });
+  function menuAction(action) {
+    hideMenu();
+    if (action === 'feed') {
+      petEngine.showBubble('啊呜啊呜！吃token！', 1200);
+      broadcastPetEvent('feed');
+    } else if (action === 'bath') {
+      doBath();
+      broadcastPetEvent('bath');
+    } else if (action === 'chat') {
+      showChat();
+    } else if (action === 'affection') {
+      petEngine.showBubble('查询好感度中……', 1200);
+      broadcastPetEvent('queryAffection');
+    } else if (action === 'link') {
+      try { if (window.AndroidBridge) AndroidBridge.openLink(); }
+      catch (e) { petEngine.showBubble('去找DeepSeek玩啦~', 1500); }
+    } else if (action === 'ghost') {
+      try { if (window.AndroidBridge) AndroidBridge.toggleGhost(); }
+      catch (e) { petEngine.showBubble('隐身失败！', 1000); }
+    }
+  }
+
+  // 洗澡：泡泡+变干净
+  function doBath() {
+    petEngine.bodyEl.classList.remove('dirty');
+    petEngine.setState('happy');
+    petEngine.showBubble('🛁 正在洗涤用户喂我的脏话，fuck！', 2800);
+    const be = document.getElementById('bath-emoji');
+    be.style.display = 'block';
+    setTimeout(function () { be.style.display = 'none'; }, 2800);
+    const box = document.getElementById('pet-container');
+    for (let i = 0; i < 5; i++) {
+      const bp = document.createElement('div');
+      bp.className = 'bubble-pop';
+      const s = 8 + Math.random() * 10;
+      bp.style.width = s + 'px';
+      bp.style.height = s + 'px';
+      bp.style.left = (30 + Math.random() * 50) + 'px';
+      bp.style.bottom = (20 + Math.random() * 30) + 'px';
+      bp.style.animationDelay = (Math.random() * 0.4) + 's';
+      box.appendChild(bp);
+      setTimeout(() => bp.remove(), 1800);
+    }
+    setTimeout(() => petEngine.setState('normal'), 3000);
+  }
+
+  // ===== 聊天小窗 =====
+  const CHAT_KEY = 'pet_chat_log';
+  function getChatLog() {
+    try { return JSON.parse(localStorage.getItem(CHAT_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveChatLog(log) {
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(log.slice(-80))); } catch (e) {}
+  }
+  function renderChat() {
+    const list = document.getElementById('chat-list');
+    const log = getChatLog();
+    list.innerHTML = '';
+    log.forEach(function (m) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + m.role;
+      div.textContent = m.text;
+      list.appendChild(div);
+    });
+    list.scrollTop = list.scrollHeight;
+  }
+  function appendChat(role, text) {
+    const log = getChatLog();
+    log.push({ role: role, text: text, ts: Date.now() });
+    saveChatLog(log);
+    const list = document.getElementById('chat-list');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = text;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
+  }
+  function showChat() {
+    document.getElementById('chat-view').classList.add('open');
+    renderChat();
+    try { if (window.AndroidBridge) AndroidBridge.openChat(); } catch (e) {}
+    setTimeout(function () {
+      const inp = document.getElementById('chat-input2');
+      if (inp) inp.focus();
+    }, 300);
+  }
+  function closeChatView() {
+    document.getElementById('chat-view').classList.remove('open');
+    try { if (window.AndroidBridge) AndroidBridge.closeChat(); } catch (e) {}
+    try { if (window.AndroidBridge) AndroidBridge.notifyMenu(false); } catch (e) {}
+  }
+  // 聊天窗右下角拖拽缩放
+  (function () {
+    const h = document.getElementById('resize-handle');
+    if (!h) return;
+    let sx = 0, sy = 0, active = false;
+    h.addEventListener('touchstart', function (e) {
+      active = true;
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    h.addEventListener('touchmove', function (e) {
+      if (!active) return;
+      const dx = e.touches[0].clientX - sx;
+      const dy = e.touches[0].clientY - sy;
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      try { if (window.AndroidBridge) AndroidBridge.resizeChatBy(dx, dy); } catch (err) {}
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    h.addEventListener('touchend', function () { active = false; });
+  })();
+  let pendingChats = [];
   function sendChat() {
     const inp = document.getElementById('chat-input2');
     const text = inp.value.trim();
     if (!text) return;
     appendChat('user', text);
     inp.value = '';
-    // 本地大脑：直接走Kotlin桥调DeepSeek API（永不掉线）
     try {
       if (window.AndroidBridge) AndroidBridge.askAI(text);
       else appendChat('ai', '服务器繁忙，请稍后再试~');
-    } catch (e) {
-      appendChat('ai', '服务器繁忙，请稍后再试~');
+    } catch (e) { appendChat('ai', '服务器繁忙，请稍后再试~'); }
+    if (false) {
+      pendingChats.push(text);
+      const tip = document.getElementById('chat-list');
+      if (tip) {
+        const d = document.createElement('div');
+        d.style.cssText = 'text-align:center;color:#999;font-size:11px;padding:2px';
+        d.textContent = '⏳ 网络连接中，消息稍后自动发送…';
+        tip.appendChild(d);
+        setTimeout(function () { try { d.remove(); } catch (e) {} }, 3000);
+      }
     }
   }
   document.getElementById('chat-input2').addEventListener('keydown', function (e) {
@@ -1170,8 +1350,7 @@
     }
   }
 
-  // 本地大脑启动：初始化状态
-  broadcastLocalState();
+  connectRealtime();
 </script>
 </body>
 </html>
