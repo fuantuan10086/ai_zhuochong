@@ -618,9 +618,9 @@
 
     setState(state) {
       // 切换形象时撤掉趴着海豚（防两条鱼重叠）
+      // 任何形象切换先撤掉趴着海豚（本体whale交给CSS状态类控制，不手动改）
       const _wd = document.getElementById('watchDolphin');
-      const _wb = document.getElementById('whale');
-      if (_wd && _wb) { _wd.style.display = 'none'; _wb.style.display = ''; }
+      if (_wd) _wd.style.display = 'none';
       // 角落模式：只保持沮丧鲸鱼
       if (cornerMode && state !== 'sad') return;
       // 充电中不睡觉
@@ -816,18 +816,15 @@
     entMode = active;
     const box = document.getElementById('pet-container') || document.body;
     const _wd2 = document.getElementById('watchDolphin');
-    const _wb2 = document.getElementById('whale');
     if (active) {
       box.classList.add('game-mode');
       document.getElementById('gameToy').textContent = '🎮';
-      // 游戏模式：撤掉趴着鲸鱼（海豚），恢复CSS控制
+      // 游戏模式：撤掉趴着海豚（本体交给CSS）
       if (_wd2) _wd2.style.display = 'none';
-      if (_wb2) _wb2.style.display = '';
       this.showBubble('陪你打游戏~我安静点', 1200);
     } else {
       box.classList.remove('game-mode');
       if (_wd2) _wd2.style.display = 'none';
-      if (_wb2) _wb2.style.display = '';
     }
   };
   window.petEngine.onGhost = function (on) {
@@ -945,13 +942,14 @@
     }
     const wd = document.getElementById('watchDolphin');
     const wb = document.getElementById('whale');
-    // 先隐藏本体鲸鱼（setState会碰海豚，所以顺序：先setState再显示海豚）
-    if (wb) wb.style.display = 'none';
+    // 顺序：setState先恢复CSS（可能把whale显示出来）-> 再强制隐藏whale -> 显示海豚
     petEngine.setState('happy');
+    if (wb) wb.style.display = 'none';
     if (wd) wd.style.display = 'block';
     petEngine.showBubble('你去' + appName + '啦~ 我趴着看你！', 1800);
     setTimeout(function () {
-      if (wd && wb) { wd.style.display = 'none'; wb.style.display = ''; }
+      if (wd) wd.style.display = 'none';
+      if (wb) wb.style.display = '';
     }, 15000);
   };
 
