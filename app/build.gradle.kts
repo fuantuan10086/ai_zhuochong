@@ -15,11 +15,23 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        debug {
+            storeFile = file("../keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
         }
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
